@@ -22,6 +22,7 @@ export interface CompanyData {
   response_distribution: Record<string, number>;
   group_problem_matrix: { group: string; problem: string; count: number }[];
   monthly_status: { year: number; month: string; status: string; count: number }[];
+  monthly_category: { month: string; recall: number; foodSafety: number; foodQuality: number; foodLaw: number; foodService: number }[];
 }
 
 const nslBranch2: CompanyData = {
