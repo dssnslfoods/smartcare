@@ -143,7 +143,21 @@ const nslBranch2: CompanyData = {
     { year: 2026, month: "01_January", status: "ไม่ปิดผู้ผลิต", count: 12 },
     { year: 2026, month: "02_February", status: "ปิดผู้ผลิต", count: 14 },
     { year: 2026, month: "03_March", status: "ปิดผู้ผลิต", count: 4 },
-  ]
+  ],
+  monthly_category: [
+    { month: "Jan", recall: 0, foodSafety: 5, foodQuality: 8, foodLaw: 0, foodService: 4 },
+    { month: "Feb", recall: 0, foodSafety: 12, foodQuality: 20, foodLaw: 0, foodService: 12 },
+    { month: "Mar", recall: 0, foodSafety: 8, foodQuality: 16, foodLaw: 0, foodService: 9 },
+    { month: "Apr", recall: 0, foodSafety: 10, foodQuality: 28, foodLaw: 0, foodService: 13 },
+    { month: "May", recall: 0, foodSafety: 6, foodQuality: 15, foodLaw: 0, foodService: 8 },
+    { month: "Jun", recall: 0, foodSafety: 4, foodQuality: 10, foodLaw: 0, foodService: 5 },
+    { month: "Jul", recall: 0, foodSafety: 9, foodQuality: 20, foodLaw: 1, foodService: 10 },
+    { month: "Aug", recall: 0, foodSafety: 7, foodQuality: 18, foodLaw: 0, foodService: 9 },
+    { month: "Sep", recall: 0, foodSafety: 6, foodQuality: 17, foodLaw: 0, foodService: 9 },
+    { month: "Oct", recall: 0, foodSafety: 10, foodQuality: 24, foodLaw: 0, foodService: 12 },
+    { month: "Nov", recall: 0, foodSafety: 4, foodQuality: 10, foodLaw: 0, foodService: 6 },
+    { month: "Dec", recall: 0, foodSafety: 5, foodQuality: 14, foodLaw: 0, foodService: 7 },
+  ],
 };
 
 const nslBranch1: CompanyData = {

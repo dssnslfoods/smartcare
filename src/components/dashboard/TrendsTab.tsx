@@ -5,6 +5,14 @@ import type { CompanyData } from "@/data/mockData";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+const CAT_COLORS: Record<string, string> = {
+  "Recall": "#a855f7",
+  "Complaint Food Safety": "#ef4444",
+  "Complaint Food Quality": "#0ea5e9",
+  "Complaint Food Law": "#fbbf24",
+  "Complaint Service": "#22c55e",
+};
+
 interface Props { data: CompanyData }
 
 export default function TrendsTab({ data }: Props) {
@@ -28,6 +36,15 @@ export default function TrendsTab({ data }: Props) {
     return { name: label, "ปิดผู้ผลิต": closed, "ไม่ปิดผู้ผลิต": open, "ปิดเป็น RD": rd };
   });
 
+  const categoryStackData = data.monthly_category.map(d => ({
+    name: d.month,
+    "Recall": d.recall,
+    "Complaint Food Safety": d.foodSafety,
+    "Complaint Food Quality": d.foodQuality,
+    "Complaint Food Law": d.foodLaw,
+    "Complaint Service": d.foodService,
+  }));
+
   const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
 
   return (
@@ -46,6 +63,32 @@ export default function TrendsTab({ data }: Props) {
             <Legend />
             <Bar dataKey="2025" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
             <Bar dataKey="2026" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Stacked Column by Category */}
+      <div className="chart-card">
+        <div className="chart-title">
+          <span className="chart-icon" style={{ background: "rgba(168,85,247,0.2)" }}>📊</span>
+          แนวโน้ม Complaint รายเดือน ตามหมวดหมู่ (Stacked)
+        </div>
+        <ResponsiveContainer width="100%" height={350}>
+          <BarChart data={categoryStackData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(217,19%,27%)" />
+            <XAxis dataKey="name" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend />
+            {Object.entries(CAT_COLORS).map(([key, color], i, arr) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                stackId="cat"
+                fill={color}
+                radius={i === arr.length - 1 ? [4, 4, 0, 0] : undefined}
+              />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
