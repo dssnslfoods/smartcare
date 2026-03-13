@@ -17,13 +17,6 @@ interface Props { data: CompanyData }
 
 export default function TrendsTab({ data }: Props) {
   const yearCompare = MONTH_LABELS.map((m, i) => {
-    const idx = String(i + 1).padStart(2, "0");
-    const d2025 = data.monthly_trend.find(x => x.year === 2025 && x.month.startsWith(idx));
-    const d2026 = data.monthly_trend.find(x => x.year === 2026 && x.month.startsWith(idx));
-    return { name: m, "2025": d2025?.calls ?? null, "2026": d2026?.calls ?? null };
-  });
-
-  const monthOrder = ["01_January", "02_February", "03_March", "04_April", "05_May", "06_June",
     "07_July", "08_August", "09_September", "10_October", "11_November", "12_December"];
   const uniqueMonths = [...new Set(data.monthly_status.map(m => m.month))];
   const sortedMonths = monthOrder.filter(m => uniqueMonths.includes(m));
