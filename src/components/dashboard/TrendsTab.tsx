@@ -16,7 +16,7 @@ const CAT_COLORS: Record<string, string> = {
 interface Props { data: CompanyData }
 
 export default function TrendsTab({ data }: Props) {
-  const yearCompare = MONTH_LABELS.map((m, i) => {
+  const monthOrder = ["01_January", "02_February", "03_March", "04_April", "05_May", "06_June",
     "07_July", "08_August", "09_September", "10_October", "11_November", "12_December"];
   const uniqueMonths = [...new Set(data.monthly_status.map(m => m.month))];
   const sortedMonths = monthOrder.filter(m => uniqueMonths.includes(m));
@@ -42,25 +42,6 @@ export default function TrendsTab({ data }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="chart-card">
-        <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(14,165,233,0.2)" }}>📈</span>
-          แนวโน้ม Complaint รายเดือน (เปรียบเทียบปี)
-        </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={yearCompare}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(217,19%,27%)" />
-            <XAxis dataKey="name" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Legend />
-            <Bar dataKey="2025" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="2026" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Stacked Column by Category */}
       <div className="chart-card">
         <div className="chart-title">
           <span className="chart-icon" style={{ background: "rgba(168,85,247,0.2)" }}>📊</span>
