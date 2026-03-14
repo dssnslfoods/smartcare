@@ -42,7 +42,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">Status</label>
         <select className="filter-select" value={status} onChange={e => onStatusChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+          {(statuses || []).map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
