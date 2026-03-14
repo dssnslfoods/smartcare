@@ -1,16 +1,32 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, List, ClipboardPlus, Database, Activity } from "lucide-react";
+import { BarChart3, List, ClipboardPlus, Database, Activity, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const NAV_ITEMS = [
   { path: "/", label: "Dashboard", icon: BarChart3 },
   { path: "/complaints", label: "รายการ Complaint", icon: List },
   { path: "/complaints/new", label: "บันทึกใหม่", icon: ClipboardPlus },
-  { path: "/master-data", label: "Master Data", icon: Database },
+  { path: "/master-data", label: "Master Data", icon: Database, roles: ["admin"] as string[] },
 ];
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "ผู้ดูแลระบบ",
+  supervisor: "หัวหน้างาน",
+  executive: "ผู้บริหาร",
+  staff: "เจ้าหน้าที่",
+};
 
 export default function TopNavBar() {
   const location = useLocation();
+  const { user, role, signOut } = useAuth();
+
+  const visibleItems = NAV_ITEMS.filter(item => {
+    if (!item.roles) return true;
+    return role && item.roles.includes(role);
+  });
 
   return (
     <header className="glass-navbar sticky top-0 z-50">
@@ -28,7 +44,7 @@ export default function TopNavBar() {
 
         {/* Navigation */}
         <nav className="flex items-center gap-1">
-          {NAV_ITEMS.map(item => {
+          {visibleItems.map(item => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -48,13 +64,19 @@ export default function TopNavBar() {
           })}
         </nav>
 
-        {/* Status badge */}
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-kpi-green opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-kpi-green"></span>
+        {/* User info & Logout */}
+        <div className="flex items-center gap-3">
+          {role && (
+            <Badge variant="secondary" className="text-[10px] font-semibold tracking-wide uppercase">
+              {ROLE_LABELS[role] || role}
+            </Badge>
+          )}
+          <span className="text-[11px] text-muted-foreground hidden md:inline truncate max-w-[150px]">
+            {user?.email}
           </span>
-          <span className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">Live</span>
+          <Button variant="ghost" size="sm" onClick={signOut} className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </header>
