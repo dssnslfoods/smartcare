@@ -33,9 +33,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}>
-            <Lock className="h-8 w-8 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="Smart Care" className="mx-auto w-20 h-20 mb-4" />
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Smart Care v.1.0</h1>
           <p className="text-sm text-muted-foreground mt-1">ระบบจัดการข้อร้องเรียนอัจฉริยะ</p>
         </div>
