@@ -182,8 +182,24 @@ export default function ComplaintForm() {
                     <Input id="complaint_number" placeholder="เช่น QAS.2.2025.09/001" value={form.complaint_number} onChange={e => setField("complaint_number", e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="complaint_date" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่</Label>
-                    <Input id="complaint_date" type="date" value={form.complaint_date} onChange={e => setField("complaint_date", e.target.value)} />
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.complaint_date && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.complaint_date ? format(new Date(form.complaint_date), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={form.complaint_date ? new Date(form.complaint_date) : undefined}
+                          onSelect={(date) => setField("complaint_date", date ? format(date, "yyyy-MM-dd") : "")}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
