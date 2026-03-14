@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Save, Plus, Loader2, CheckCircle2 } from "lucide-react";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
