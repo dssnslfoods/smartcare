@@ -10,14 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, Users, Loader2, Shield } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Loader2, Shield, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserRecord {
   id: string;
+  user_id: string;
   email: string;
   created_at: string;
-  role: AppRole | null;
+  role: AppRole;
+  is_active: boolean;
 }
 
 const ROLES: { value: AppRole; label: string }[] = [
@@ -33,18 +35,6 @@ const ROLE_COLORS: Record<string, string> = {
   executive: "bg-primary/10 text-primary border-primary/20",
   staff: "bg-muted text-muted-foreground border-border",
 };
-
-async function callManageUsers(action: string, payload: Record<string, any> = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error("Not authenticated");
-
-  const res = await supabase.functions.invoke("manage-users", {
-    body: { action, ...payload },
-  });
-
-  if (res.error) throw new Error(res.error.message);
-  return res.data;
-}
 
 export default function UserManagement() {
   const { user: currentUser } = useAuth();
@@ -64,8 +54,13 @@ export default function UserManagement() {
   async function loadUsers() {
     try {
       setLoading(true);
-      const data = await callManageUsers("list");
-      setUsers(data);
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setUsers((data as UserRecord[]) || []);
     } catch (err: any) {
       toast.error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ: " + err.message);
     } finally {
@@ -100,23 +95,63 @@ export default function UserManagement() {
     setSaving(true);
     try {
       if (editingUser) {
-        await callManageUsers("update", {
-          userId: editingUser.id,
-          role: formRole,
-          ...(formPassword ? { password: formPassword } : {}),
-        });
+        // Update role
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .update({ role: formRole })
+          .eq("id", editingUser.id);
+
+        if (roleError) throw roleError;
+
+        // Update password if provided
+        if (formPassword) {
+          const { error: pwError } = await supabase.auth.updateUser({
+            password: formPassword,
+          });
+          if (pwError) {
+            toast.warning("อัปเดต role สำเร็จ แต่เปลี่ยนรหัสผ่านได้เฉพาะของตัวเอง");
+          }
+        }
+
         toast.success("อัปเดตผู้ใช้สำเร็จ");
       } else {
+        // Create new user via signUp
         if (!formEmail || !formPassword) {
           toast.error("กรุณากรอกอีเมลและรหัสผ่าน");
           setSaving(false);
           return;
         }
-        await callManageUsers("create", {
+
+        // Save current session before signUp
+        const { data: currentSession } = await supabase.auth.getSession();
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formEmail,
           password: formPassword,
-          role: formRole,
         });
+
+        if (signUpError) throw signUpError;
+        if (!signUpData.user) throw new Error("ไม่สามารถสร้างผู้ใช้ได้");
+
+        // Insert role record with email
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .insert({
+            user_id: signUpData.user.id,
+            role: formRole,
+            email: formEmail,
+          });
+
+        if (roleError) throw roleError;
+
+        // Restore original admin session if signUp changed it
+        if (currentSession?.session) {
+          await supabase.auth.setSession({
+            access_token: currentSession.session.access_token,
+            refresh_token: currentSession.session.refresh_token,
+          });
+        }
+
         toast.success("เพิ่มผู้ใช้สำเร็จ");
       }
       setDialogOpen(false);
@@ -132,8 +167,15 @@ export default function UserManagement() {
     if (!deletingUser) return;
     setSaving(true);
     try {
-      await callManageUsers("delete", { userId: deletingUser.id });
-      toast.success("ลบผู้ใช้สำเร็จ");
+      // Remove role (soft delete - user can no longer access the app)
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", deletingUser.id);
+
+      if (error) throw error;
+
+      toast.success("ลบผู้ใช้ออกจากระบบสำเร็จ");
       setDeleteDialogOpen(false);
       setDeletingUser(null);
       loadUsers();
@@ -202,9 +244,9 @@ export default function UserManagement() {
                             )}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
-                            {new Date(u.created_at).toLocaleDateString("th-TH", {
+                            {u.created_at ? new Date(u.created_at).toLocaleDateString("th-TH", {
                               year: "numeric", month: "short", day: "numeric"
-                            })}
+                            }) : "-"}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -215,7 +257,7 @@ export default function UserManagement() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => openDelete(u)}
-                                disabled={u.id === currentUser?.id}
+                                disabled={u.user_id === currentUser?.id}
                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -250,15 +292,17 @@ export default function UserManagement() {
                 placeholder="user@example.com"
               />
             </div>
-            <div className="space-y-2">
-              <Label>{editingUser ? "รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)" : "รหัสผ่าน"}</Label>
-              <Input
-                type="password"
-                value={formPassword}
-                onChange={(e) => setFormPassword(e.target.value)}
-                placeholder={editingUser ? "เว้นว่างถ้าไม่เปลี่ยน" : "กรอกรหัสผ่าน"}
-              />
-            </div>
+            {!editingUser && (
+              <div className="space-y-2">
+                <Label>รหัสผ่าน</Label>
+                <Input
+                  type="password"
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  placeholder="กรอกรหัสผ่าน (อย่างน้อย 6 ตัว)"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>บทบาท</Label>
               <Select value={formRole} onValueChange={(v) => setFormRole(v as AppRole)}>
@@ -287,10 +331,14 @@ export default function UserManagement() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>ยืนยันการลบ</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              ยืนยันการลบ
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            คุณต้องการลบผู้ใช้ <strong>{deletingUser?.email}</strong> ใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้
+            คุณต้องการลบผู้ใช้ <strong className="text-foreground">{deletingUser?.email}</strong> ออกจากระบบใช่หรือไม่?
+            ผู้ใช้จะไม่สามารถเข้าใช้งานระบบได้อีก
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>ยกเลิก</Button>
