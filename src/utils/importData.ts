@@ -88,7 +88,7 @@ export async function importLookupData(onProgress: (msg: string) => void) {
   // 7. Callers
   onProgress('กำลัง import Callers...');
   const { data: callers } = await supabase.from('callers').insert(
-    callersData.map(c => ({ name: c.name, company_id: companyMap['NSL'] || null }))
+    callersData.map(c => ({ name: c.name, customer_company_name: 'NSL' }))
   ).select();
   const callerMap: IdMap = {};
   callers?.forEach(c => { callerMap[c.name] = c.id; });

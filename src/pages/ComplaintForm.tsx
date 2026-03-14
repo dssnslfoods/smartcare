@@ -278,11 +278,11 @@ export default function ComplaintForm() {
                 {/* Row 5: Caller, Status, Priority */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ผู้แจ้ง</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ช่องทางการแจ้งปัญหา</Label>
                     <Select value={form.caller_id || "_none"} onValueChange={v => setField("caller_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกผู้แจ้ง" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="เลือกช่องทางการแจ้งปัญหา" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="_none">-- เลือกผู้แจ้ง --</SelectItem>
+                        <SelectItem value="_none">-- เลือกช่องทางการแจ้งปัญหา --</SelectItem>
                         {lookup.callers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>

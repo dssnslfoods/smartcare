@@ -42,7 +42,7 @@ export default function GroupsTab({ data }: Props) {
         <div className="chart-card">
           <div className="chart-title">
             <span className="chart-icon" style={{ background: "rgba(249,115,22,0.2)" }}>👤</span>
-            ผู้แจ้ง Complaint
+            ช่องทางการแจ้งปัญหา
           </div>
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={callerData} layout="vertical">

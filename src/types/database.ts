@@ -41,9 +41,9 @@ export interface Database {
         Update: { id?: string; problem_type_id?: string; name?: string; code?: string | null; created_at?: string | null };
       };
       callers: {
-        Row: { id: string; name: string; phone: string | null; email: string | null; company_id: string | null; created_at: string | null };
-        Insert: { id?: string; name: string; phone?: string | null; email?: string | null; company_id?: string | null; created_at?: string | null };
-        Update: { id?: string; name?: string; phone?: string | null; email?: string | null; company_id?: string | null; created_at?: string | null };
+        Row: { id: string; name: string; phone: string | null; email: string | null; customer_company_name: string | null; created_at: string | null };
+        Insert: { id?: string; name: string; phone?: string | null; email?: string | null; customer_company_name?: string | null; created_at?: string | null };
+        Update: { id?: string; name?: string; phone?: string | null; email?: string | null; customer_company_name?: string | null; created_at?: string | null };
       };
       complaints: {
         Row: {

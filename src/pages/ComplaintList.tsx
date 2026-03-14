@@ -184,7 +184,7 @@ export default function ComplaintList() {
                     <TableHead>สาขา</TableHead>
                     <TableHead>กลุ่มสินค้า</TableHead>
                     <TableHead>ประเภทปัญหา</TableHead>
-                    <TableHead>ผู้แจ้ง</TableHead>
+                    <TableHead>ช่องทางการแจ้งปัญหา</TableHead>
                     <TableHead className="w-[120px]">สถานะ</TableHead>
                     <TableHead className="w-[100px]">วันที่แก้ไข</TableHead>
                   </TableRow>

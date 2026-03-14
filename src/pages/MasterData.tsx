@@ -43,8 +43,8 @@ interface TabConfig {
   displayColumns: { key: string; label: string }[];
   fetchSelect: string;
   toInsert: (form: Record<string, string>, refs: RefData) => Record<string, any>;
-  toDisplayRow: (row: any) => Record<string, string>;
-  toExportRow: (row: any) => Record<string, string>;
+  toDisplayRow: (row: any, refs: RefData) => Record<string, string>;
+  toExportRow: (row: any, refs: RefData) => Record<string, string>;
   importColumns: { key: string; label: string; required?: boolean }[];
   importSampleRows: Record<string, string>[];
   toImportRows: (rows: Record<string, any>[], refs: RefData) => Record<string, any>[];
@@ -69,8 +69,8 @@ const TAB_CONFIGS: TabConfig[] = [
     ],
     fetchSelect: 'id, name, code',
     toInsert: (form) => ({ name: form.name, code: form.code || null }),
-    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-' }),
-    toExportRow: (row) => ({ 'ชื่อบริษัท': row.name, 'รหัส': row.code || '' }),
+    toDisplayRow: (row, _refs) => ({ name: row.name, code: row.code || '-' }),
+    toExportRow: (row, _refs) => ({ 'ชื่อบริษัท': row.name, 'รหัส': row.code || '' }),
     importColumns: [
       { key: 'name', label: 'ชื่อบริษัท', required: true },
       { key: 'code', label: 'รหัส' },
@@ -103,12 +103,12 @@ const TAB_CONFIGS: TabConfig[] = [
     ],
     fetchSelect: 'id, name, code, companies:company_id(name)',
     toInsert: (form) => ({ name: form.name, code: form.code || null, company_id: form.company_id }),
-    toDisplayRow: (row) => ({
+    toDisplayRow: (row, _refs) => ({
       name: row.name,
       code: row.code || '-',
       company_name: (row.companies as any)?.name || '-',
     }),
-    toExportRow: (row) => ({
+    toExportRow: (row, _refs) => ({
       'ชื่อสาขา': row.name,
       'รหัส': row.code || '',
       'บริษัท': (row.companies as any)?.name || '',
@@ -150,8 +150,8 @@ const TAB_CONFIGS: TabConfig[] = [
     ],
     fetchSelect: 'id, name, code',
     toInsert: (form) => ({ name: form.name, code: form.code || null }),
-    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-' }),
-    toExportRow: (row) => ({ 'ชื่อกลุ่มสินค้า': row.name, 'รหัส': row.code || '' }),
+    toDisplayRow: (row, _refs) => ({ name: row.name, code: row.code || '-' }),
+    toExportRow: (row, _refs) => ({ 'ชื่อกลุ่มสินค้า': row.name, 'รหัส': row.code || '' }),
     importColumns: [
       { key: 'name', label: 'ชื่อกลุ่ม', required: true },
       { key: 'code', label: 'รหัส' },
@@ -185,11 +185,11 @@ const TAB_CONFIGS: TabConfig[] = [
       name: form.name,
       code: form.code || null,
     }),
-    toDisplayRow: (row) => ({
+    toDisplayRow: (row, _refs) => ({
       name: row.name,
       code: row.code || '-',
     }),
-    toExportRow: (row) => ({
+    toExportRow: (row, _refs) => ({
       'ชื่อหมวดหมู่': row.name,
       'รหัส': row.code || '',
     }),
@@ -224,21 +224,21 @@ const TAB_CONFIGS: TabConfig[] = [
       { key: 'code', label: 'รหัส' },
       { key: 'category_name', label: 'หมวดหมู่' },
     ],
-    fetchSelect: 'id, name, code, categories:category_id(name)',
+    fetchSelect: '*',
     toInsert: (form) => ({
       name: form.name,
       code: form.code || null,
       category_id: form.category_id || null,
     }),
-    toDisplayRow: (row) => ({
-      name: row.name,
+    toDisplayRow: (row, refs) => ({
+      name: row.name || '-',
       code: row.code || '-',
-      category_name: (row.categories as any)?.name || '-',
+      category_name: refs.categories.find(c => c.id === row.category_id)?.name || '-',
     }),
-    toExportRow: (row) => ({
-      'ชื่อประเภทปัญหา': row.name,
+    toExportRow: (row, refs) => ({
+      'ชื่อประเภทปัญหา': row.name || '',
       'รหัส': row.code || '',
-      'หมวดหมู่': (row.categories as any)?.name || '',
+      'หมวดหมู่': refs.categories.find(c => c.id === row.category_id)?.name || '',
     }),
     importColumns: [
       { key: 'name', label: 'ชื่อประเภท', required: true },
@@ -274,15 +274,15 @@ const TAB_CONFIGS: TabConfig[] = [
       { key: 'name', label: 'ชื่อประเภทย่อย' },
       { key: 'problem_type_name', label: 'ประเภทปัญหา' },
     ],
-    fetchSelect: 'id, name, problem_types:problem_type_id(name)',
+    fetchSelect: '*',
     toInsert: (form) => ({ name: form.name, problem_type_id: form.problem_type_id }),
-    toDisplayRow: (row) => ({
-      name: row.name,
-      problem_type_name: (row.problem_types as any)?.name || '-',
+    toDisplayRow: (row, refs) => ({
+      name: row.name || '-',
+      problem_type_name: refs.problem_types.find(pt => pt.id === row.problem_type_id)?.name || '-',
     }),
-    toExportRow: (row) => ({
-      'ชื่อประเภทย่อย': row.name,
-      'ประเภทปัญหา': (row.problem_types as any)?.name || '',
+    toExportRow: (row, refs) => ({
+      'ชื่อประเภทย่อย': row.name || '',
+      'ประเภทปัญหา': refs.problem_types.find(pt => pt.id === row.problem_type_id)?.name || '',
     }),
     importColumns: [
       { key: 'name', label: 'ชื่อประเภทย่อย', required: true },
@@ -304,64 +304,63 @@ const TAB_CONFIGS: TabConfig[] = [
     },
   },
 
-  // ── ผู้แจ้ง ────────────────────────────────────────────────────────────────────
+  // ── ช่องทางการแจ้งปัญหา ─────────────────────────────────────────────────────────
   {
     id: 'callers',
-    label: 'ผู้แจ้ง',
+    label: 'ช่องทางการแจ้งปัญหา',
     icon: Users,
     tableName: 'callers',
     formFields: [
-      { key: 'name', label: 'ชื่อผู้แจ้ง', type: 'text', required: true, placeholder: 'กรอกชื่อผู้แจ้ง' },
+      { key: 'name', label: 'ชื่อช่องทาง', type: 'text', required: true, placeholder: 'กรอกชื่อช่องทาง' },
       { key: 'phone', label: 'เบอร์โทร', type: 'text', placeholder: 'เช่น 081-234-5678' },
       { key: 'email', label: 'อีเมล', type: 'text', placeholder: 'example@email.com' },
-      { key: 'company_id', label: 'บริษัท', type: 'select', refKey: 'companies' },
+      { key: 'customer_company_name', label: 'บริษัทลูกค้า', type: 'text', placeholder: 'กรอกชื่อบริษัทลูกค้า' },
     ],
     displayColumns: [
-      { key: 'name', label: 'ชื่อผู้แจ้ง' },
+      { key: 'name', label: 'ชื่อช่องทาง' },
       { key: 'phone', label: 'เบอร์โทร' },
       { key: 'email', label: 'อีเมล' },
-      { key: 'company_name', label: 'บริษัท' },
+      { key: 'customer_company_name', label: 'บริษัทลูกค้า' },
     ],
-    fetchSelect: 'id, name, phone, email, companies:company_id(name)',
+    fetchSelect: '*',
     toInsert: (form) => ({
       name: form.name,
       phone: form.phone || null,
       email: form.email || null,
-      company_id: form.company_id || null,
+      customer_company_name: form.customer_company_name || null,
     }),
-    toDisplayRow: (row) => ({
-      name: row.name,
+    toDisplayRow: (row, _refs) => ({
+      name: row.name || '-',
       phone: row.phone || '-',
       email: row.email || '-',
-      company_name: (row.companies as any)?.name || '-',
+      customer_company_name: row.customer_company_name || '-',
     }),
-    toExportRow: (row) => ({
-      'ชื่อผู้แจ้ง': row.name,
+    toExportRow: (row, _refs) => ({
+      'ชื่อช่องทาง': row.name || '',
       'เบอร์โทร': row.phone || '',
       'อีเมล': row.email || '',
-      'บริษัท': (row.companies as any)?.name || '',
+      'บริษัทลูกค้า': row.customer_company_name || '',
     }),
     importColumns: [
-      { key: 'name', label: 'ชื่อผู้แจ้ง', required: true },
+      { key: 'name', label: 'ชื่อช่องทาง', required: true },
       { key: 'phone', label: 'เบอร์โทร' },
       { key: 'email', label: 'อีเมล' },
-      { key: 'company_name', label: 'บริษัท (ชื่อ)' },
+      { key: 'customer_company_name', label: 'บริษัทลูกค้า' },
     ],
     importSampleRows: [
-      { 'ชื่อผู้แจ้ง': 'สมชาย ใจดี', 'เบอร์โทร': '081-234-5678', 'อีเมล': 'somchai@example.com', 'บริษัท (ชื่อ)': 'บริษัท ABC จำกัด' },
-      { 'ชื่อผู้แจ้ง': 'สมหญิง รักดี', 'เบอร์โทร': '089-876-5432', 'อีเมล': 'somying@example.com', 'บริษัท (ชื่อ)': '' },
+      { 'ชื่อช่องทาง': 'สมชาย ใจดี', 'เบอร์โทร': '081-234-5678', 'อีเมล': 'somchai@example.com', 'บริษัทลูกค้า': 'บริษัท ABC จำกัด' },
+      { 'ชื่อช่องทาง': 'สมหญิง รักดี', 'เบอร์โทร': '089-876-5432', 'อีเมล': 'somying@example.com', 'บริษัทลูกค้า': '' },
     ],
-    toImportRows: (rows, refs) => {
-      const map: Record<string, string> = {};
-      refs.companies.forEach(c => { map[c.name] = c.id; });
+    toImportRows: (rows) => {
       return rows.map(r => ({
-        name: r['name'] || r['ชื่อผู้แจ้ง'] || 'ไม่ระบุ',
+        name: r['name'] || r['ชื่อช่องทาง'] || 'ไม่ระบุ',
         phone: r['phone'] || r['เบอร์โทร'] || null,
         email: r['email'] || r['อีเมล'] || null,
-        company_id: map[r['company_name'] || r['บริษัท (ชื่อ)'] || r['บริษัท'] || ''] || null,
+        customer_company_name: r['customer_company_name'] || r['บริษัทลูกค้า'] || null,
       }));
     },
   },
+
 ];
 
 // ─── TableTab Component ───────────────────────────────────────────────────────
@@ -395,21 +394,29 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
   const loadRecords = useCallback(async () => {
     setLoading(true);
     try {
+      // Attempt 1: fetchSelect + order by created_at
       let { data, error } = await (supabase
         .from(config.tableName as any)
         .select(config.fetchSelect) as any)
         .order('created_at', { ascending: false })
         .limit(200);
 
-      // If join fails (FK column not yet in DB), retry with base columns only
+      // Attempt 2: select(*) + order by created_at
       if (error) {
-        const baseSelect = config.fetchSelect
-          .replace(/,\s*[a-zA-Z_]+:[a-zA-Z_]+\([^)]*\)/g, '')
-          .trim();
         const retry = await (supabase
           .from(config.tableName as any)
-          .select(baseSelect) as any)
+          .select('*') as any)
           .order('created_at', { ascending: false })
+          .limit(200);
+        data = retry.data;
+        error = retry.error;
+      }
+
+      // Attempt 3: select(*) without ordering (fallback if created_at missing)
+      if (error) {
+        const retry = await (supabase
+          .from(config.tableName as any)
+          .select('*') as any)
           .limit(200);
         data = retry.data;
         error = retry.error;
@@ -460,16 +467,25 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
 
   // ── Export ────────────────────────────────────────────────────────────────────
   const handleExport = async () => {
-    const { data, error } = await (supabase
+    let { data, error } = await (supabase
       .from(config.tableName as any)
       .select(config.fetchSelect) as any)
       .order('created_at', { ascending: false });
 
     if (error) {
+      const retry = await (supabase
+        .from(config.tableName as any)
+        .select('*') as any)
+        .limit(10000);
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error) {
       toast({ title: 'Export ล้มเหลว', description: error.message, variant: 'destructive' });
       return;
     }
-    const exportRows = (data || []).map((row: any) => config.toExportRow(row));
+    const exportRows = (data || []).map((row: any) => config.toExportRow(row, refs));
     if (!exportRows.length) {
       toast({ title: 'ไม่มีข้อมูลสำหรับ Export', variant: 'destructive' });
       return;
@@ -610,15 +626,15 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
 
                   {field.type === 'select' ? (
                     <Select
-                      value={form[field.key] ?? ''}
-                      onValueChange={val => setForm(f => ({ ...f, [field.key]: val }))}
+                      value={form[field.key] || '__none__'}
+                      onValueChange={val => setForm(f => ({ ...f, [field.key]: val === '__none__' ? '' : val }))}
                     >
                       <SelectTrigger id={`${config.id}-${field.key}`} className="h-8 text-sm">
                         <SelectValue placeholder={`เลือก${field.label}`} />
                       </SelectTrigger>
                       <SelectContent>
                         {!field.required && (
-                          <SelectItem value="">— ไม่ระบุ —</SelectItem>
+                          <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                         )}
                         {field.refKey && refs[field.refKey].map(item => (
                           <SelectItem key={item.id} value={item.id}>
@@ -681,7 +697,7 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
                   </TableHeader>
                   <TableBody>
                     {records.map((row, i) => {
-                      const display = config.toDisplayRow(row);
+                      const display = config.toDisplayRow(row, refs);
                       return (
                         <TableRow key={row.id ?? i} className="hover:bg-muted/40">
                           <TableCell className="text-xs text-muted-foreground text-center">{i + 1}</TableCell>
