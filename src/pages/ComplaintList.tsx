@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Search, ChevronLeft, ChevronRight, List } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
