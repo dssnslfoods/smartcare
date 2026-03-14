@@ -267,7 +267,9 @@ export function useComplaintsData(
   companyId: string,
   branchId: string,
   statusFilter: string,
-  categoryFilter: string
+  categoryFilter: string,
+  dateFrom: string,
+  dateTo: string
 ) {
   const [rawComplaints, setRawComplaints] = useState<ComplaintRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -302,6 +304,13 @@ export function useComplaintsData(
       }
       if (categoryFilter && categoryFilter !== "ALL") {
         query = query.eq("category_id", categoryFilter);
+      }
+      if (dateFrom) {
+        query = query.gte("complaint_date", dateFrom);
+      }
+      if (dateTo) {
+        // To include the whole end date, we can set to the end of the day or just use lte with the date string
+        query = query.lte("complaint_date", `${dateTo}T23:59:59`);
       }
 
       const { data, error } = await query;
@@ -341,7 +350,7 @@ export function useComplaintsData(
       setLoading(false);
     }
     fetch();
-  }, [companyId, branchId, statusFilter, categoryFilter]);
+  }, [companyId, branchId, statusFilter, categoryFilter, dateFrom, dateTo]);
 
   const data = useMemo(
     () => buildCompanyData(rawComplaints, companyName, branchLabel),

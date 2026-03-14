@@ -27,9 +27,11 @@ export default function Index() {
   const [branchId, setBranchId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [category, setCategory] = useState("ALL");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const { options, loading: optionsLoading } = useFilterOptions();
-  const { data, loading, count } = useComplaintsData(companyId, branchId, status, category);
+  const { data, loading, count } = useComplaintsData(companyId, branchId, status, category, dateFrom, dateTo);
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,10 +58,14 @@ export default function Index() {
           branchId={branchId}
           status={status}
           category={category}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
           onCompanyChange={(v) => { setCompanyId(v); setBranchId("ALL"); }}
           onBranchChange={setBranchId}
           onStatusChange={setStatus}
           onCategoryChange={setCategory}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
         />
 
         {/* Navigation Tabs */}

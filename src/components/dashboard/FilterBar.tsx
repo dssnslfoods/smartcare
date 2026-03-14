@@ -9,16 +9,21 @@ interface FilterBarProps {
   branchId: string;
   status: string;
   category: string;
+  dateFrom: string;
+  dateTo: string;
   onCompanyChange: (v: string) => void;
   onBranchChange: (v: string) => void;
   onStatusChange: (v: string) => void;
   onCategoryChange: (v: string) => void;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
 }
 
 export default function FilterBar({
   companies, branches, statuses, categories,
-  companyId, branchId, status, category,
-  onCompanyChange, onBranchChange, onStatusChange, onCategoryChange
+  companyId, branchId, status, category, dateFrom, dateTo,
+  onCompanyChange, onBranchChange, onStatusChange, onCategoryChange,
+  onDateFromChange, onDateToChange
 }: FilterBarProps) {
   return (
     <div className="glass rounded-2xl p-4 mb-6">
@@ -58,6 +63,26 @@ export default function FilterBar({
             <option value="ALL">ทั้งหมด</option>
             {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">ตั้งแต่</label>
+          <input 
+            type="date" 
+            className="filter-select" 
+            value={dateFrom} 
+            onChange={e => onDateFromChange(e.target.value)} 
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">ถึงวันที่</label>
+          <input 
+            type="date" 
+            className="filter-select" 
+            value={dateTo} 
+            onChange={e => onDateToChange(e.target.value)} 
+          />
         </div>
       </div>
     </div>
