@@ -305,14 +305,25 @@ function TableImporter({ config }: { config: TableConfig }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Required columns info */}
-          <div className="flex flex-wrap gap-1.5">
-            <span className="text-xs text-muted-foreground">คอลัมน์:</span>
-            {config.columns.map(col => (
-              <Badge key={col.key} variant={col.required ? 'default' : 'secondary'} className="text-xs">
-                {col.label} {col.required && '*'}
-              </Badge>
-            ))}
+          {/* Required columns + Download Template */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">คอลัมน์:</span>
+              {config.columns.map(col => (
+                <Badge key={col.key} variant={col.required ? 'default' : 'secondary'} className="text-xs">
+                  {col.label} {col.required && '*'}
+                </Badge>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => downloadTemplate(config)}
+            >
+              <Download className="h-3.5 w-3.5" />
+              ดาวน์โหลด Template
+            </Button>
           </div>
 
           {/* Upload Area */}
