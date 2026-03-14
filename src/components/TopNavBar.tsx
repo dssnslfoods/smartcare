@@ -34,15 +34,12 @@ export default function TopNavBar() {
     <header className="glass-navbar sticky top-0 z-50">
       <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo / Brand */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-               style={{ background: "linear-gradient(135deg, hsl(210 100% 60%), hsl(270 80% 65%))" }}>
-            <Activity className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-sm font-bold tracking-wide text-foreground group-hover:text-primary transition-colors">
-            Smart Care
-          </span>
-        </Link>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <img src={logoImg} alt="Smart Care" className="w-8 h-8 rounded-xl object-contain" />
+            <span className="text-sm font-bold tracking-wide text-foreground group-hover:text-primary transition-colors">
+              Smart Care
+            </span>
+          </Link>
 
         {/* Navigation */}
         <nav className="flex items-center gap-1">
