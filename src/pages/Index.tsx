@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Database, Loader2, ClipboardList } from "lucide-react";
+import { Database, Loader2, ClipboardList, List } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import FilterBar from "@/components/dashboard/FilterBar";
 import OverviewTab from "@/components/dashboard/OverviewTab";
