@@ -236,17 +236,31 @@ function TableImporter({ config }: { config: TableConfig }) {
       const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
 
       // Transform data
-      const transformed = jsonData.map(row => {
-        const t = config.transform(row);
-        // Remove internal fields (starting with _)
-        const clean: Record<string, any> = {};
-        for (const [k, v] of Object.entries(t)) {
-          if (!k.startsWith('_')) {
-            clean[k] = v === '' ? 'ไม่ระบุ' : v;
+      const rawTransformed = jsonData.map(row => config.transform(row));
+
+      // Resolve foreign keys for problem_sub_types
+      let transformed: Record<string, any>[];
+      if (config.id === 'problem_sub_types') {
+        // Lookup problem_types to map name → id
+        const { data: ptRows } = await supabase.from('problem_types').select('id, name');
+        const ptMap: Record<string, string> = {};
+        ptRows?.forEach(pt => { ptMap[pt.name] = pt.id; });
+
+        transformed = rawTransformed.map(t => ({
+          name: t.name === '' ? 'ไม่ระบุ' : t.name,
+          problem_type_id: ptMap[t._problem_type_name] || ptRows?.[0]?.id || null,
+        }));
+      } else {
+        transformed = rawTransformed.map(t => {
+          const clean: Record<string, any> = {};
+          for (const [k, v] of Object.entries(t)) {
+            if (!k.startsWith('_')) {
+              clean[k] = v === '' ? 'ไม่ระบุ' : v;
+            }
           }
-        }
-        return clean;
-      });
+          return clean;
+        });
+      }
 
       // Batch insert
       let totalInserted = 0;
