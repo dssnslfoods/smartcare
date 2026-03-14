@@ -84,16 +84,16 @@ const TABLE_CONFIGS: TableConfig[] = [
     columns: [
       { key: 'name', label: 'ชื่อหมวดหมู่', required: true },
       { key: 'code', label: 'รหัส' },
-      { key: 'product_group_name', label: 'กลุ่มสินค้า (ชื่อ)' },
     ],
     sampleRows: [
-      { 'ชื่อหมวดหมู่': 'Food Safety', 'รหัส': 'CAT001', 'กลุ่มสินค้า (ชื่อ)': 'อาหารแปรรูป' },
-      { 'ชื่อหมวดหมู่': 'Food Quality', 'รหัส': 'CAT002', 'กลุ่มสินค้า (ชื่อ)': 'เครื่องดื่ม' },
+      { 'ชื่อหมวดหมู่': 'Food Safety', 'รหัส': 'CAT001' },
+      { 'ชื่อหมวดหมู่': 'Food Quality', 'รหัส': 'CAT002' },
+      { 'ชื่อหมวดหมู่': 'Food Law', 'รหัส': 'CAT003' },
+      { 'ชื่อหมวดหมู่': 'Food Service', 'รหัส': 'CAT004' },
     ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อหมวดหมู่'] || row['Name'] || 'ไม่ระบุ',
       code: row['code'] || row['รหัส'] || row['Code'] || 'ไม่ระบุ',
-      _product_group_name: row['product_group_name'] || row['กลุ่มสินค้า'] || row['Product Group'] || '',
     }),
   },
   {

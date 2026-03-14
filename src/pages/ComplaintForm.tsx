@@ -101,8 +101,7 @@ export default function ComplaintForm() {
 
   const filteredBranches = form.company_id
     ? lookup.branches.filter(b => b.company_id === form.company_id) : lookup.branches;
-  const filteredCategories = form.product_group_id
-    ? lookup.categories.filter(c => c.product_group_id === form.product_group_id) : lookup.categories;
+  const filteredCategories = lookup.categories;
   const filteredSubTypes = form.problem_type_id
     ? lookup.problem_sub_types.filter(s => s.problem_type_id === form.problem_type_id) : lookup.problem_sub_types;
 
