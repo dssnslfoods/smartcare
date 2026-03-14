@@ -217,47 +217,36 @@ const TAB_CONFIGS: TabConfig[] = [
     formFields: [
       { key: 'name', label: 'ชื่อประเภทปัญหา', type: 'text', required: true, placeholder: 'กรอกชื่อประเภทปัญหา' },
       { key: 'code', label: 'รหัส', type: 'text', placeholder: 'เช่น PT001' },
-      { key: 'category_id', label: 'หมวดหมู่', type: 'select', refKey: 'categories' },
     ],
     displayColumns: [
       { key: 'name', label: 'ชื่อประเภทปัญหา' },
       { key: 'code', label: 'รหัส' },
-      { key: 'category_name', label: 'หมวดหมู่' },
     ],
-    fetchSelect: 'id, name, code, categories:category_id(name)',
+    fetchSelect: 'id, name, code',
     toInsert: (form) => ({
       name: form.name,
       code: form.code || null,
-      category_id: form.category_id || null,
     }),
     toDisplayRow: (row) => ({
       name: row.name,
       code: row.code || '-',
-      category_name: (row.categories as any)?.name || '-',
     }),
     toExportRow: (row) => ({
       'ชื่อประเภทปัญหา': row.name,
       'รหัส': row.code || '',
-      'หมวดหมู่': (row.categories as any)?.name || '',
     }),
     importColumns: [
       { key: 'name', label: 'ชื่อประเภท', required: true },
       { key: 'code', label: 'รหัส' },
-      { key: 'category_name', label: 'หมวดหมู่ (ชื่อ)' },
     ],
     importSampleRows: [
-      { 'ชื่อประเภท': 'สิ่งแปลกปลอม', 'รหัส': 'PT001', 'หมวดหมู่ (ชื่อ)': 'Food Safety' },
-      { 'ชื่อประเภท': 'คุณภาพผลิตภัณฑ์', 'รหัส': 'PT002', 'หมวดหมู่ (ชื่อ)': 'Food Quality' },
+      { 'ชื่อประเภท': 'สิ่งแปลกปลอม', 'รหัส': 'PT001' },
+      { 'ชื่อประเภท': 'คุณภาพผลิตภัณฑ์', 'รหัส': 'PT002' },
     ],
-    toImportRows: (rows, refs) => {
-      const map: Record<string, string> = {};
-      refs.categories.forEach(c => { map[c.name] = c.id; });
-      return rows.map(r => ({
-        name: r['name'] || r['ชื่อประเภท'] || r['ชื่อประเภทปัญหา'] || 'ไม่ระบุ',
-        code: r['code'] || r['รหัส'] || null,
-        category_id: map[r['category_name'] || r['หมวดหมู่ (ชื่อ)'] || r['หมวดหมู่'] || ''] || null,
-      }));
-    },
+    toImportRows: (rows) => rows.map(r => ({
+      name: r['name'] || r['ชื่อประเภท'] || r['ชื่อประเภทปัญหา'] || 'ไม่ระบุ',
+      code: r['code'] || r['รหัส'] || null,
+    })),
   },
 
   // ── ประเภทย่อย ────────────────────────────────────────────────────────────────
