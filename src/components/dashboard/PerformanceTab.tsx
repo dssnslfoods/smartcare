@@ -20,7 +20,7 @@ export default function PerformanceTab({ data }: Props) {
       <div className="chart-card">
         <div className="chart-title">
           <span className="chart-icon" style={{ background: "rgba(251,191,36,0.2)" }}>⏱️</span>
-          การกระจายเวลาตอบกลับ
+          ระยะเวลาในการตอบ Complaint
         </div>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={distData}>
