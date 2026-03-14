@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Search, ChevronLeft, ChevronRight, List } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -117,27 +118,25 @@ export default function ComplaintList() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
-            </Link>
-            <List className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">รายการข้อร้องเรียนทั้งหมด</h1>
-            <Badge variant="secondary" className="ml-2">{totalCount} รายการ</Badge>
+      <TopNavBar />
+
+      <div className="max-w-[1440px] mx-auto px-6 py-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">รายการข้อร้องเรียน</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              ทั้งหมด <span className="text-primary font-semibold">{totalCount}</span> รายการ
+            </p>
           </div>
           <Link to="/complaints/new">
             <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />บันทึกใหม่</Button>
           </Link>
         </div>
-      </header>
 
-      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-4">
-        {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="glass rounded-2xl p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -170,12 +169,10 @@ export default function ComplaintList() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Table */}
-        <Card>
-          <CardContent className="p-0">
+          {/* Table */}
+          <div className="glass rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -206,7 +203,7 @@ export default function ComplaintList() {
                     </TableRow>
                   ) : (
                     complaints.map(c => (
-                      <TableRow key={c.id} className="hover:bg-muted/50">
+                      <TableRow key={c.id} className="hover:bg-secondary/30 transition-colors">
                         <TableCell className="font-mono text-xs">{c.complaint_number || "-"}</TableCell>
                         <TableCell className="text-xs">{c.complaint_date || "-"}</TableCell>
                         <TableCell className="text-sm">{c.companies?.name || "-"}</TableCell>
@@ -226,31 +223,31 @@ export default function ComplaintList() {
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>แสดง</span>
-            <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
-              <SelectTrigger className="w-[70px] h-8"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <span>รายการ / หน้า</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              หน้า {totalPages > 0 ? page + 1 : 0} / {totalPages}
-            </span>
-            <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>แสดง</span>
+              <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
+                <SelectTrigger className="w-[70px] h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <span>รายการ / หน้า</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                หน้า {totalPages > 0 ? page + 1 : 0} / {totalPages}
+              </span>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

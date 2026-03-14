@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ClipboardList, Save, Plus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Save, Plus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -176,44 +177,17 @@ export default function ComplaintForm() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header
-        className="sticky top-0 z-50 border-b border-border"
-        style={{ background: "linear-gradient(135deg, hsl(217,33%,17%) 0%, hsl(222,47%,11%) 100%)" }}
-      >
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-foreground tracking-wide flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                บันทึกข้อร้องเรียน
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                กรอกข้อมูล Complaint ใหม่เข้าระบบ
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/master-data">
-              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-                Master Data
-              </Badge>
-            </Link>
-            <Link to="/">
-              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-                ← Dashboard
-              </Badge>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <TopNavBar />
 
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-6">
+      <div className="max-w-[1440px] mx-auto px-6 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            บันทึกข้อร้องเรียน
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            กรอกข้อมูล Complaint ใหม่เข้าระบบ
+          </p>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form */}
           <div className="lg:col-span-2">

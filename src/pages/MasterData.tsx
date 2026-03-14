@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, ArrowLeft, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users } from 'lucide-react';
+import TopNavBar from '@/components/TopNavBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -375,50 +375,37 @@ function TableImporter({ config }: { config: TableConfig }) {
 export default function MasterData() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border" style={{ background: 'linear-gradient(135deg, hsl(217,33%,17%) 0%, hsl(222,47%,11%) 100%)' }}>
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-foreground tracking-wide flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                Master Data Management
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Import ข้อมูลจากไฟล์ Excel เข้าฐานข้อมูล
-              </p>
-            </div>
-          </div>
-          <Link to="/">
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-              ← กลับ Dashboard
-            </Badge>
-          </Link>
-        </div>
-      </header>
+      <TopNavBar />
 
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-6">
+      <div className="max-w-[1440px] mx-auto px-6 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <Database className="h-6 w-6 text-primary" />
+            Master Data Management
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Import ข้อมูลจากไฟล์ Excel เข้าฐานข้อมูล
+          </p>
+        </div>
+
         <Tabs defaultValue="companies" className="space-y-6">
-          <TabsList className="bg-card border border-border p-1 h-auto flex flex-wrap gap-1">
-            {TABLE_CONFIGS.map(config => {
-              const Icon = config.icon;
-              return (
-                <TabsTrigger
-                  key={config.id}
-                  value={config.id}
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5 text-sm"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {config.label}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+          <div className="glass rounded-2xl p-1.5">
+            <TabsList className="bg-transparent border-0 p-0 h-auto flex flex-wrap gap-1">
+              {TABLE_CONFIGS.map(config => {
+                const Icon = config.icon;
+                return (
+                  <TabsTrigger
+                    key={config.id}
+                    value={config.id}
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1.5 text-sm rounded-xl"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {config.label}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
 
           {TABLE_CONFIGS.map(config => (
             <TabsContent key={config.id} value={config.id}>
