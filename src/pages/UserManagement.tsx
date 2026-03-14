@@ -121,6 +121,11 @@ export default function UserManagement() {
           setSaving(false);
           return;
         }
+        if (formPassword.length < 6) {
+          toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+          setSaving(false);
+          return;
+        }
 
         // Save current session before signUp
         const { data: currentSession } = await supabase.auth.getSession();
@@ -128,10 +133,24 @@ export default function UserManagement() {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formEmail,
           password: formPassword,
+          options: { emailRedirectTo: undefined },
         });
 
-        if (signUpError) throw signUpError;
-        if (!signUpData.user) throw new Error("ไม่สามารถสร้างผู้ใช้ได้");
+        if (signUpError) {
+          const msg = signUpError.message;
+          if (msg.includes("invalid")) {
+            throw new Error("อีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง (ไม่รองรับ test.com, example.com)");
+          }
+          if (msg.includes("already")) {
+            throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
+          }
+          throw signUpError;
+        }
+
+        // signUp may return a fake user if email already exists (Supabase security)
+        if (!signUpData.user || signUpData.user.identities?.length === 0) {
+          throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
+        }
 
         // Insert role record with email
         const { error: roleError } = await supabase
