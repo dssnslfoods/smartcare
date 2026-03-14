@@ -11,6 +11,7 @@ import ComplaintForm from "./pages/ComplaintForm.tsx";
 import ComplaintList from "./pages/ComplaintList.tsx";
 import Login from "./pages/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import UserManagement from "./pages/UserManagement.tsx";
 
 const queryClient = new QueryClient();
 
