@@ -118,24 +118,23 @@ export default function ComplaintList() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
-            </Link>
-            <List className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">รายการข้อร้องเรียนทั้งหมด</h1>
-            <Badge variant="secondary" className="ml-2">{totalCount} รายการ</Badge>
+      <TopNavBar />
+
+      <div className="max-w-[1440px] mx-auto px-6 py-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">รายการข้อร้องเรียน</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              ทั้งหมด <span className="text-primary font-semibold">{totalCount}</span> รายการ
+            </p>
           </div>
           <Link to="/complaints/new">
             <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />บันทึกใหม่</Button>
           </Link>
         </div>
-      </header>
 
-      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-4">
+        <div className="space-y-4">
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
