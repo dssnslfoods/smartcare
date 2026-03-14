@@ -43,6 +43,10 @@ export default function Index() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/complaints" className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
+              <List className="h-3.5 w-3.5" />
+              รายการ Complaint
+            </Link>
             <Link to="/complaints/new" className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
               <ClipboardList className="h-3.5 w-3.5" />
               บันทึก Complaint
