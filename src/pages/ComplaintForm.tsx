@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ClipboardList, Save, Plus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
