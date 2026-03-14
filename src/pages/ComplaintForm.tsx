@@ -15,7 +15,7 @@ interface LookupData {
   companies: LookupItem[];
   branches: (LookupItem & { company_id: string })[];
   product_groups: LookupItem[];
-  categories: (LookupItem & { product_group_id: string })[];
+  categories: LookupItem[];
   problem_types: LookupItem[];
   problem_sub_types: (LookupItem & { problem_type_id: string })[];
   callers: LookupItem[];
