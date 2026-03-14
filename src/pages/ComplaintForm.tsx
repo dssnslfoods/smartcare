@@ -320,8 +320,24 @@ export default function ComplaintForm() {
                     <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={2} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="resolved_at" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข</Label>
-                    <Input id="resolved_at" type="date" value={form.resolved_at} onChange={e => setField("resolved_at", e.target.value)} />
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.resolved_at && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.resolved_at ? format(new Date(form.resolved_at), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่แก้ไข</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={form.resolved_at ? new Date(form.resolved_at) : undefined}
+                          onSelect={(date) => setField("resolved_at", date ? format(date, "yyyy-MM-dd") : "")}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
