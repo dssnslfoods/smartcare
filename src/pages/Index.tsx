@@ -42,9 +42,15 @@ export default function Index() {
               {data.branch} | ข้อมูลตั้งแต่ มกราคม 2025 - มีนาคม 2026
             </p>
           </div>
-          <span className="px-3.5 py-1 rounded-full text-xs font-medium" style={{ background: "rgba(34,211,238,0.12)", color: "#22d3ee" }}>
-            LIVE DATA
-          </span>
+          <div className="flex items-center gap-3">
+            <Link to="/master-data" className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground transition-colors">
+              <Database className="h-3.5 w-3.5" />
+              Master Data
+            </Link>
+            <span className="px-3.5 py-1 rounded-full text-xs font-medium" style={{ background: "rgba(34,211,238,0.12)", color: "#22d3ee" }}>
+              LIVE DATA
+            </span>
+          </div>
         </div>
       </header>
 
