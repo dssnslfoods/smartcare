@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users, Download } from 'lucide-react';
 import TopNavBar from '@/components/TopNavBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,6 +15,7 @@ interface TableConfig {
   icon: React.ElementType;
   tableName: string;
   columns: { key: string; label: string; required?: boolean }[];
+  sampleRows: Record<string, string>[];
   transform: (row: Record<string, any>) => Record<string, any>;
 }
 
@@ -27,6 +28,10 @@ const TABLE_CONFIGS: TableConfig[] = [
     columns: [
       { key: 'name', label: 'ชื่อบริษัท', required: true },
       { key: 'code', label: 'รหัส' },
+    ],
+    sampleRows: [
+      { 'ชื่อบริษัท': 'บริษัท ABC จำกัด', 'รหัส': 'COM001' },
+      { 'ชื่อบริษัท': 'บริษัท XYZ จำกัด', 'รหัส': 'COM002' },
     ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อบริษัท'] || row['Name'] || 'ไม่ระบุ',
@@ -43,6 +48,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'code', label: 'รหัส' },
       { key: 'company_name', label: 'บริษัท (ชื่อ)' },
     ],
+    sampleRows: [
+      { 'ชื่อสาขา': 'สาขากรุงเทพ', 'รหัส': 'BR001', 'บริษัท (ชื่อ)': 'บริษัท ABC จำกัด' },
+      { 'ชื่อสาขา': 'สาขาเชียงใหม่', 'รหัส': 'BR002', 'บริษัท (ชื่อ)': 'บริษัท ABC จำกัด' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อสาขา'] || row['Name'] || 'ไม่ระบุ',
       code: row['code'] || row['รหัส'] || row['Code'] || 'ไม่ระบุ',
@@ -57,6 +66,10 @@ const TABLE_CONFIGS: TableConfig[] = [
     columns: [
       { key: 'name', label: 'ชื่อกลุ่ม', required: true },
       { key: 'code', label: 'รหัส' },
+    ],
+    sampleRows: [
+      { 'ชื่อกลุ่ม': 'อาหารแปรรูป', 'รหัส': 'PG001' },
+      { 'ชื่อกลุ่ม': 'เครื่องดื่ม', 'รหัส': 'PG002' },
     ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อกลุ่ม'] || row['Name'] || 'ไม่ระบุ',
@@ -73,6 +86,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'code', label: 'รหัส' },
       { key: 'product_group_name', label: 'กลุ่มสินค้า (ชื่อ)' },
     ],
+    sampleRows: [
+      { 'ชื่อหมวดหมู่': 'Food Safety', 'รหัส': 'CAT001', 'กลุ่มสินค้า (ชื่อ)': 'อาหารแปรรูป' },
+      { 'ชื่อหมวดหมู่': 'Food Quality', 'รหัส': 'CAT002', 'กลุ่มสินค้า (ชื่อ)': 'เครื่องดื่ม' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อหมวดหมู่'] || row['Name'] || 'ไม่ระบุ',
       code: row['code'] || row['รหัส'] || row['Code'] || 'ไม่ระบุ',
@@ -88,6 +105,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'name', label: 'ชื่อประเภท', required: true },
       { key: 'code', label: 'รหัส' },
     ],
+    sampleRows: [
+      { 'ชื่อประเภท': 'สิ่งแปลกปลอม', 'รหัส': 'PT001' },
+      { 'ชื่อประเภท': 'คุณภาพผลิตภัณฑ์', 'รหัส': 'PT002' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อประเภท'] || row['Name'] || 'ไม่ระบุ',
       code: row['code'] || row['รหัส'] || row['Code'] || 'ไม่ระบุ',
@@ -101,6 +122,10 @@ const TABLE_CONFIGS: TableConfig[] = [
     columns: [
       { key: 'name', label: 'ชื่อประเภทย่อย', required: true },
       { key: 'problem_type_name', label: 'ประเภทปัญหา (ชื่อ)' },
+    ],
+    sampleRows: [
+      { 'ชื่อประเภทย่อย': 'พบแมลง', 'ประเภทปัญหา (ชื่อ)': 'สิ่งแปลกปลอม' },
+      { 'ชื่อประเภทย่อย': 'สีผิดปกติ', 'ประเภทปัญหา (ชื่อ)': 'คุณภาพผลิตภัณฑ์' },
     ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อประเภทย่อย'] || row['Name'] || 'ไม่ระบุ',
@@ -117,6 +142,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'phone', label: 'เบอร์โทร' },
       { key: 'email', label: 'อีเมล' },
     ],
+    sampleRows: [
+      { 'ชื่อผู้แจ้ง': 'สมชาย ใจดี', 'เบอร์โทร': '081-234-5678', 'อีเมล': 'somchai@example.com' },
+      { 'ชื่อผู้แจ้ง': 'สมหญิง รักดี', 'เบอร์โทร': '089-876-5432', 'อีเมล': 'somying@example.com' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อผู้แจ้ง'] || row['Name'] || 'ไม่ระบุ',
       phone: row['phone'] || row['เบอร์โทร'] || row['Phone'] || null,
@@ -132,6 +161,16 @@ interface ImportState {
   importing: boolean;
   result: { success: boolean; count: number; message: string } | null;
   fileName: string;
+}
+
+function downloadTemplate(config: TableConfig) {
+  const headers = config.columns.map(c => c.label);
+  const ws = XLSX.utils.json_to_sheet(config.sampleRows, { header: headers });
+  // Set column widths
+  ws['!cols'] = headers.map(() => ({ wch: 25 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, config.label);
+  XLSX.writeFile(wb, `template_${config.id}.xlsx`);
 }
 
 function TableImporter({ config }: { config: TableConfig }) {
@@ -266,14 +305,25 @@ function TableImporter({ config }: { config: TableConfig }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Required columns info */}
-          <div className="flex flex-wrap gap-1.5">
-            <span className="text-xs text-muted-foreground">คอลัมน์:</span>
-            {config.columns.map(col => (
-              <Badge key={col.key} variant={col.required ? 'default' : 'secondary'} className="text-xs">
-                {col.label} {col.required && '*'}
-              </Badge>
-            ))}
+          {/* Required columns + Download Template */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">คอลัมน์:</span>
+              {config.columns.map(col => (
+                <Badge key={col.key} variant={col.required ? 'default' : 'secondary'} className="text-xs">
+                  {col.label} {col.required && '*'}
+                </Badge>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => downloadTemplate(config)}
+            >
+              <Download className="h-3.5 w-3.5" />
+              ดาวน์โหลด Template
+            </Button>
           </div>
 
           {/* Upload Area */}
