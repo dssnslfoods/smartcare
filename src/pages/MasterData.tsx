@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, ArrowLeft, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users, ClipboardList } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, ArrowLeft, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
