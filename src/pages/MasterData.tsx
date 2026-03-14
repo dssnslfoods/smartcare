@@ -129,7 +129,7 @@ const TABLE_CONFIGS: TableConfig[] = [
     ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อประเภทย่อย'] || row['Name'] || 'ไม่ระบุ',
-      _problem_type_name: row['problem_type_name'] || row['ประเภทปัญหา'] || row['Problem Type'] || '',
+      _problem_type_name: row['problem_type_name'] || row['ประเภทปัญหา (ชื่อ)'] || row['ประเภทปัญหา'] || row['Problem Type'] || '',
     }),
   },
   {
