@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,55 +6,64 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 213 31% 91%;
+    --background: 220 20% 7%;
+    --foreground: 220 15% 93%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 213 31% 91%;
+    --card: 220 18% 13%;
+    --card-foreground: 220 15% 93%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 213 31% 91%;
+    --popover: 220 18% 13%;
+    --popover-foreground: 220 15% 93%;
 
-    --primary: 199 89% 48%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 220 20% 7%;
 
-    --secondary: 217 19% 27%;
-    --secondary-foreground: 213 31% 91%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 220 15% 85%;
 
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 17% 63%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 199 89% 48%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 270 80% 65%;
+    --accent-foreground: 220 20% 7%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 80% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 199 89% 48%;
+    --border: 220 15% 20%;
+    --input: 220 15% 18%;
+    --ring: 210 100% 60%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Custom tokens */
-    --surface-deep: 222 47% 11%;
-    --surface-card: 217 33% 17%;
-    --surface-hover: 215 19% 27%;
-    --kpi-cyan: 186 78% 54%;
-    --kpi-green: 142 71% 45%;
-    --kpi-yellow: 44 93% 55%;
-    --kpi-red: 0 84% 60%;
-    --kpi-purple: 258 60% 65%;
-    --kpi-orange: 27 87% 62%;
+    /* Liquid Glass tokens */
+    --glass-bg: 220 20% 12% / 0.6;
+    --glass-border: 220 20% 40% / 0.2;
+    --glass-shine: 220 20% 100% / 0.06;
+    --glass-blur: 20px;
+    --glass-shadow: 0 8px 32px hsl(220 40% 4% / 0.5), inset 0 1px 0 hsl(220 20% 100% / 0.08);
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 215 17% 63%;
-    --sidebar-primary: 199 89% 48%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 19% 27%;
-    --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 217 19% 27%;
-    --sidebar-ring: 199 89% 48%;
+    /* KPI tokens */
+    --kpi-cyan: 195 90% 55%;
+    --kpi-green: 160 70% 48%;
+    --kpi-yellow: 42 95% 58%;
+    --kpi-red: 0 80% 60%;
+    --kpi-purple: 270 80% 65%;
+    --kpi-orange: 25 90% 58%;
+
+    /* Gradient tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 60%) 0%, hsl(270 80% 65%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(220 20% 10%) 0%, hsl(220 20% 7%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(220 20% 100% / 0.08) 0%, hsl(220 20% 100% / 0.02) 100%);
+
+    --sidebar-background: 220 20% 7%;
+    --sidebar-foreground: 220 10% 55%;
+    --sidebar-primary: 210 100% 60%;
+    --sidebar-primary-foreground: 220 20% 7%;
+    --sidebar-accent: 220 15% 18%;
+    --sidebar-accent-foreground: 220 15% 93%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 210 100% 60%;
   }
 }
 
@@ -64,36 +73,109 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Sarabun', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', 'Sarabun', sans-serif;
   }
 }
 
 @layer components {
+  /* ===== Liquid Glass Components ===== */
+  .glass {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-card {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+    @apply rounded-2xl transition-all duration-300;
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--gradient-glass);
+    pointer-events: none;
+  }
+  .glass-card:hover {
+    border-color: hsl(220 20% 50% / 0.3);
+    box-shadow: 0 12px 40px hsl(220 40% 4% / 0.6), inset 0 1px 0 hsl(220 20% 100% / 0.12);
+    transform: translateY(-1px);
+  }
+
+  .glass-navbar {
+    background: hsl(220 20% 10% / 0.7);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border-bottom: 1px solid hsl(220 20% 40% / 0.15);
+    box-shadow: 0 4px 24px hsl(220 40% 4% / 0.4);
+  }
+
+  /* ===== KPI Cards ===== */
   .kpi-card {
-    @apply bg-card rounded-xl p-5 border border-border transition-all duration-200;
+    @apply relative overflow-hidden rounded-2xl p-5 transition-all duration-300;
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-glass);
+    pointer-events: none;
+    border-radius: inherit;
   }
   .kpi-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: hsl(220 20% 50% / 0.3);
+    box-shadow: 0 12px 40px hsl(220 40% 4% / 0.6), inset 0 1px 0 hsl(220 20% 100% / 0.12);
   }
   .kpi-value {
-    @apply text-3xl font-bold;
+    @apply text-3xl font-bold tracking-tight;
   }
   .kpi-label {
-    @apply text-sm text-muted-foreground mt-1;
+    @apply text-sm text-muted-foreground mt-1.5 font-medium;
   }
+
+  /* ===== Chart Cards ===== */
   .chart-card {
-    @apply bg-card rounded-xl p-6 border border-border;
+    @apply relative overflow-hidden rounded-2xl p-6;
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+  }
+  .chart-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-glass);
+    pointer-events: none;
+    border-radius: inherit;
   }
   .chart-title {
     @apply text-base font-semibold text-foreground mb-4 flex items-center gap-2;
   }
   .chart-icon {
-    @apply w-6 h-6 rounded-md flex items-center justify-center text-xs;
+    @apply w-7 h-7 rounded-lg flex items-center justify-center text-xs;
   }
+
+  /* ===== Insight Box ===== */
   .insight-box {
-    @apply bg-background border border-border rounded-lg p-4 mt-4;
+    @apply rounded-xl p-4 mt-4;
+    background: hsl(220 20% 8% / 0.6);
+    border: 1px solid hsl(var(--glass-border));
   }
   .insight-box h4 {
     @apply text-sm font-semibold mb-2;
@@ -102,44 +184,76 @@
   .insight-box p {
     @apply text-sm leading-relaxed text-muted-foreground;
   }
+
+  /* ===== Navigation Pills ===== */
   .nav-pill {
-    @apply px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer whitespace-nowrap;
+    @apply px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer whitespace-nowrap;
     color: hsl(var(--muted-foreground));
     background: transparent;
     border: none;
   }
   .nav-pill:hover {
     color: hsl(var(--foreground));
-    background: hsl(var(--surface-hover));
+    background: hsl(220 15% 18% / 0.6);
   }
   .nav-pill.active {
     background: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
+    box-shadow: 0 2px 12px hsl(210 100% 60% / 0.3);
   }
+
+  /* ===== Filter Select ===== */
   .filter-select {
-    @apply bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground;
+    @apply rounded-xl px-3 py-2 text-sm;
+    background: hsl(220 15% 14% / 0.6);
+    border: 1px solid hsl(var(--glass-border));
+    color: hsl(var(--foreground));
+    backdrop-filter: blur(8px);
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 30px;
+    transition: all 0.2s ease;
   }
   .filter-select:focus {
-    @apply outline-none ring-2 ring-primary;
+    @apply outline-none;
+    border-color: hsl(210 100% 60% / 0.5);
+    box-shadow: 0 0 0 3px hsl(210 100% 60% / 0.15);
   }
+
+  /* ===== Progress Track ===== */
   .progress-track {
     @apply h-1.5 rounded-full overflow-hidden;
-    background: hsl(var(--surface-hover));
+    background: hsl(220 15% 18%);
   }
+
+  /* ===== Heatmap ===== */
   .heatmap-table {
     @apply w-full text-xs border-collapse;
   }
   .heatmap-table th {
     @apply p-2 text-center font-medium text-muted-foreground whitespace-nowrap;
-    background: hsl(var(--surface-deep));
+    background: hsl(220 20% 8%);
   }
   .heatmap-table td {
     @apply p-2 text-center font-semibold;
-    border: 1px solid hsl(var(--surface-card));
+    border: 1px solid hsl(220 15% 16%);
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(220 15% 25%);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(220 15% 35%);
   }
 }
