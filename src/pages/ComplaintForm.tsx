@@ -93,7 +93,7 @@ export default function ComplaintForm() {
     setForm(prev => {
       const next = { ...prev, [key]: value };
       if (key === "company_id") next.branch_id = "";
-      if (key === "product_group_id") next.category_id = "";
+      // categories are now independent, no cascading reset needed
       if (key === "problem_type_id") next.problem_sub_type_id = "";
       return next;
     });
