@@ -35,7 +35,7 @@ export default function TopNavBar() {
       <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo / Brand */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <img src={logoImg} alt="Smart Care" className="w-8 h-8 rounded-xl object-contain" />
+            <img src={logoImg} alt="Smart Care" className="w-10 h-10 rounded-xl object-contain" />
             <span className="text-sm font-bold tracking-wide text-foreground group-hover:text-primary transition-colors">
               Smart Care
             </span>
