@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, List, ClipboardPlus, Database, Activity, LogOut } from "lucide-react";
+import { BarChart3, List, ClipboardPlus, Database, Activity, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { path: "/complaints", label: "รายการ Complaint", icon: List },
   { path: "/complaints/new", label: "บันทึกใหม่", icon: ClipboardPlus },
   { path: "/master-data", label: "Master Data", icon: Database, roles: ["admin"] as string[] },
+  { path: "/users", label: "จัดการผู้ใช้", icon: Users, roles: ["admin"] as string[] },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
