@@ -33,7 +33,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <img src={logoImg} alt="Smart Care" className="mx-auto w-20 h-20 mb-4" />
+          <img src={logoImg} alt="Smart Care" className="mx-auto w-32 h-32 mb-4" />
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Smart Care v.1.0</h1>
           <p className="text-sm text-muted-foreground mt-1">ระบบจัดการข้อร้องเรียนอัจฉริยะ</p>
         </div>
