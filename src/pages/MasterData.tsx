@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, ArrowLeft, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users, ClipboardList } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, ArrowLeft, Database, Building2, GitBranch, Package, Tag, AlertTriangle, List, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -123,27 +123,8 @@ const TABLE_CONFIGS: TableConfig[] = [
       email: row['email'] || row['อีเมล'] || row['Email'] || null,
     }),
   },
-  {
-    id: 'complaints',
-    label: 'ข้อร้องเรียน',
-    icon: ClipboardList,
-    tableName: 'complaints',
-    columns: [
-      { key: 'complaint_number', label: 'เลขที่เอกสาร', required: true },
-      { key: 'complaint_date', label: 'วันที่' },
-      { key: 'description', label: 'รายละเอียด' },
-      { key: 'status', label: 'สถานะ' },
-      { key: 'priority', label: 'ความสำคัญ' },
-    ],
-    transform: (row) => ({
-      complaint_number: row['complaint_number'] || row['เลขที่เอกสาร'] || row['Doc Number'] || 'ไม่ระบุ',
-      complaint_date: row['complaint_date'] || row['วันที่'] || row['Date'] || null,
-      description: row['description'] || row['รายละเอียด'] || row['Description'] || 'ไม่ระบุ',
-      status: row['status'] || row['สถานะ'] || row['Status'] || 'ไม่ระบุ',
-      priority: row['priority'] || row['ความสำคัญ'] || row['Priority'] || 'medium',
-    }),
-  },
 ];
+
 
 interface ImportState {
   previewData: Record<string, any>[] | null;
