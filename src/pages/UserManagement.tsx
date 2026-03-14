@@ -152,6 +152,16 @@ export default function UserManagement() {
           throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
         }
 
+        // Restore original admin session BEFORE role insert (signUp can switch session)
+        if (currentSession?.session) {
+          await supabase.auth.setSession({
+            access_token: currentSession.session.access_token,
+            refresh_token: currentSession.session.refresh_token,
+          });
+        } else {
+          throw new Error("เซสชันผู้ดูแลหมดอายุ กรุณาเข้าสู่ระบบใหม่");
+        }
+
         // Insert role record with email
         const { error: roleError } = await supabase
           .from("user_roles")
@@ -161,14 +171,11 @@ export default function UserManagement() {
             email: formEmail,
           });
 
-        if (roleError) throw roleError;
-
-        // Restore original admin session if signUp changed it
-        if (currentSession?.session) {
-          await supabase.auth.setSession({
-            access_token: currentSession.session.access_token,
-            refresh_token: currentSession.session.refresh_token,
-          });
+        if (roleError) {
+          if (roleError.message.includes("row-level security")) {
+            throw new Error("ไม่มีสิทธิ์เพิ่ม role (RLS) กรุณาตรวจสอบ policy 'Admin can manage user_roles'");
+          }
+          throw roleError;
         }
 
         toast.success("เพิ่มผู้ใช้สำเร็จ");
