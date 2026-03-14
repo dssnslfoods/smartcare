@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, createEphemeralSupabaseClient } from "@/integrations/supabase/client";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
