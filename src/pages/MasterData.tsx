@@ -15,6 +15,7 @@ interface TableConfig {
   icon: React.ElementType;
   tableName: string;
   columns: { key: string; label: string; required?: boolean }[];
+  sampleRows: Record<string, string>[];
   transform: (row: Record<string, any>) => Record<string, any>;
 }
 
