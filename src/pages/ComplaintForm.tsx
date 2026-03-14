@@ -60,7 +60,7 @@ export default function ComplaintForm() {
           supabase.from("companies").select("id, name").order("name"),
           supabase.from("branches").select("id, name, company_id").order("name"),
           supabase.from("product_groups").select("id, name").order("name"),
-          supabase.from("categories").select("id, name, product_group_id").order("name"),
+          supabase.from("categories").select("id, name").order("name"),
           supabase.from("problem_types").select("id, name").order("name"),
           supabase.from("problem_sub_types").select("id, name, problem_type_id").order("name"),
           supabase.from("callers").select("id, name").order("name"),
