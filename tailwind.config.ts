@@ -14,6 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
+        sans: ["Inter", "Sarabun", "sans-serif"],
         sarabun: ["Sarabun", "sans-serif"],
       },
       colors: {
