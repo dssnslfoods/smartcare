@@ -23,7 +23,7 @@ interface FilterOptions {
   companies: { id: string; name: string }[];
   branches: { id: string; name: string; company_id: string }[];
   statuses: string[];
-  categories: string[];
+  categories: { id: string; name: string }[];
 }
 
 function diffDays(d1: string | null, d2: string | null): number | null {
@@ -242,21 +242,18 @@ export function useFilterOptions() {
         supabase.from("companies").select("id, name"),
         supabase.from("branches").select("id, name, company_id"),
         supabase.from("complaints").select("status"),
-        supabase.from("categories").select("name"),
+        supabase.from("categories").select("id, name"),
       ]);
 
       const statuses = [...new Set(
         (complaintsRes.data || []).map(c => c.status).filter(Boolean) as string[]
-      )];
-      const catNames = [...new Set(
-        (categoriesRes.data || []).map(c => c.name).filter(Boolean)
       )];
 
       setOptions({
         companies: companiesRes.data || [],
         branches: branchesRes.data || [],
         statuses,
-        categories: catNames,
+        categories: categoriesRes.data || [],
       });
       setLoading(false);
     }

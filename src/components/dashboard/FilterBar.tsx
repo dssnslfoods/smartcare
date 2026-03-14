@@ -4,7 +4,7 @@ interface FilterBarProps {
   companies: { id: string; name: string }[];
   branches: { id: string; name: string; company_id: string }[];
   statuses: string[];
-  categories: string[];
+  categories: { id: string; name: string }[];
   companyId: string;
   branchId: string;
   status: string;
@@ -56,7 +56,7 @@ export default function FilterBar({
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">หมวดหมู่</label>
           <select className="filter-select" value={category} onChange={e => onCategoryChange(e.target.value)}>
             <option value="ALL">ทั้งหมด</option>
-            {(categories || []).map(c => <option key={c} value={c}>{c}</option>)}
+            {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
       </div>
