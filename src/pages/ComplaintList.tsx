@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import Footer from "@/components/Footer";
 
 interface ComplaintRow {
   id: string;
@@ -251,6 +252,7 @@ export default function ComplaintList() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

@@ -1,73 +1,64 @@
-# Welcome to your Lovable project
+# SmartCare 🛡️
+### Complaint Management System (ระบบบริหารจัดการข้อร้องเรียน)
 
-## Project info
+SmartCare เป็นระบบที่ออกแบบมาเพื่อเพิ่มประสิทธิภาพในการบริหารจัดการข้อร้องเรียนอย่างเป็นระบบ ช่วยให้องค์กรสามารถติดตาม ตรวจสอบ และแก้ไขปัญหาของลูกค้าหรือผู้ใช้งานได้อย่างรวดเร็วและแม่นยำ
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## ✨ คุณสมบัติหลัก (Key Features)
 
-There are several ways of editing your application.
+- **Complaint Tracking:** บันทึกและติดตามสถานะข้อร้องเรียนตั้งแต่เริ่มต้นจนถึงการปิดเคส
+- **Master Data Management:** จัดการข้อมูลพื้นฐาน เช่น รายชิ่อบริษัท, สาขา, กลุ่มผลิตภัณฑ์ และประเภทปัญหา
+- **User Management:** ระบบจัดการสิทธิ์ผู้ใช้งานตามบทบาท (Role-based Access Control)
+- **Data Analytics:** ระบบสรุปผลและรายงานเพื่อการวิเคราะห์ปัญหา
+- **Supabase Integration:** การจัดเก็บข้อมูลบน Cloud Database ที่มีความปลอดภัยสูง
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠️ เทคโนโลยีที่ใช้ (Technology Stack)
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend:** [React](https://reactjs.org/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite](https://vitejs.dev/)
+- **UI Framework:** [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
+- **Backend as a Service:** [Supabase](https://supabase.com/) (Database & Authentication)
+- **State Management:** [TanStack Query](https://tanstack.com/query/latest)
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 เริ่มต้นใช้งาน (Getting Started)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### ความต้องการของระบบ (Prerequisites)
+- [Node.js](https://nodejs.org/) (เวอร์ชันล่าสุดที่เสถียร)
+- [npm](https://www.npmjs.com/) หรือ [bun](https://bun.sh/)
 
-Follow these steps:
+### ขั้นตอนการติดตั้ง
+1. คลอนโปรเจกต์:
+   ```sh
+   git clone <REPOSITORY_URL>
+   cd smartcare
+   ```
+2. ติดตั้ง Dependencies:
+   ```sh
+   npm install
+   ```
+3. รันโปรเจกต์ในโหมด Development:
+   ```sh
+   npm run dev
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## ⚖️ ลิขสิทธิ์และสิทธิ์ในทางปัญญา (Intellectual Property & Licensing)
 
-# Step 3: Install the necessary dependencies.
-npm i
+**Copyright © 2026 Arnon Arpaket. All Rights Reserved.**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+ซอฟต์แวร์ "SmartCare" รวมถึงซอร์สโค้ด การออกแบบ ส่วนติดต่อผู้ใช้งาน (UI) และเอกสารประกอบทั้งหมด เป็นลิขสิทธิ์และทรัพย์สินทางปัญญาของ **Arnon Arpaket** แต่เพียงผู้เดียว
 
-**Edit a file directly in GitHub**
+### ข้อกำหนดและเงื่อนไข:
+1. **การคุ้มครอง:** ผลงานนี้ได้รับความคุ้มครองตามกฎหมายลิขสิทธิ์และกฎหมายทรัพย์สินทางปัญญาในระดับสากล
+2. **ข้อจำกัด:** ห้ามมิให้ผู้ใดทำการคัดลอก, ดัดแปลง, เผยแพร่, แจกจ่าย หรือนำไปใช้ในเชิงพาณิชย์โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษรจากเจ้าของลิขสิทธิ์
+3. **การใช้งาน:** การเข้าถึงซอร์สโค้ดนี้มีวัตถุประสงค์เพื่อการพัฒนาภายใต้ขอบเขตที่เจ้าของลิขสิทธิ์กำหนดไว้เท่านั้น
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+*สร้างสรรค์และดูแลโดย Arnon Arpaket*

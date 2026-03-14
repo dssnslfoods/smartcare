@@ -10,6 +10,7 @@ import ProblemsTab from "@/components/dashboard/ProblemsTab";
 import GroupsTab from "@/components/dashboard/GroupsTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
+import Footer from "@/components/Footer";
 
 const TABS = [
   { id: "overview", label: "ภาพรวม" },
@@ -99,6 +100,7 @@ export default function Index() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

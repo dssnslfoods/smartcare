@@ -113,8 +113,8 @@ export default function Login() {
             </p>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground/60 pt-1">
-            © 2026 Smart Care — ใส่ใจทุกเสียงร้องเรียน
+          <p className="text-center text-[10px] text-muted-foreground/50 pt-1 tracking-tight">
+            © 2026 SmartCare | Developed by Arnon Arpaket
           </p>
         </div>
       </div>
