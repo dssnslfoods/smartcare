@@ -34,7 +34,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">สาขา</label>
         <select className="filter-select" value={branchId} onChange={e => onBranchChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {(branches || []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </div>
 
