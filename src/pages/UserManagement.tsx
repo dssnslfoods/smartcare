@@ -127,10 +127,8 @@ export default function UserManagement() {
           return;
         }
 
-        // Save current session before signUp
-        const { data: currentSession } = await supabase.auth.getSession();
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        const ephemeralClient = createEphemeralSupabaseClient();
+        const { data: signUpData, error: signUpError } = await ephemeralClient.auth.signUp({
           email: formEmail,
           password: formPassword,
           options: { emailRedirectTo: undefined },
@@ -152,17 +150,7 @@ export default function UserManagement() {
           throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
         }
 
-        // Restore original admin session BEFORE role insert (signUp can switch session)
-        if (currentSession?.session) {
-          await supabase.auth.setSession({
-            access_token: currentSession.session.access_token,
-            refresh_token: currentSession.session.refresh_token,
-          });
-        } else {
-          throw new Error("เซสชันผู้ดูแลหมดอายุ กรุณาเข้าสู่ระบบใหม่");
-        }
-
-        // Insert role record with email
+        // Insert role record with email using current admin session client
         const { error: roleError } = await supabase
           .from("user_roles")
           .insert({
