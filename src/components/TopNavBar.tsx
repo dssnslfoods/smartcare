@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, List, ClipboardPlus, Database, Activity, LogOut } from "lucide-react";
+import { BarChart3, List, ClipboardPlus, Database, Activity, LogOut, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
