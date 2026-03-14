@@ -50,7 +50,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">หมวดหมู่</label>
         <select className="filter-select" value={category} onChange={e => onCategoryChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          {(categories || []).map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
     </div>
