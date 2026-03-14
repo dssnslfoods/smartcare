@@ -142,6 +142,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'phone', label: 'เบอร์โทร' },
       { key: 'email', label: 'อีเมล' },
     ],
+    sampleRows: [
+      { 'ชื่อผู้แจ้ง': 'สมชาย ใจดี', 'เบอร์โทร': '081-234-5678', 'อีเมล': 'somchai@example.com' },
+      { 'ชื่อผู้แจ้ง': 'สมหญิง รักดี', 'เบอร์โทร': '089-876-5432', 'อีเมล': 'somying@example.com' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อผู้แจ้ง'] || row['Name'] || 'ไม่ระบุ',
       phone: row['phone'] || row['เบอร์โทร'] || row['Phone'] || null,
