@@ -29,6 +29,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'name', label: 'ชื่อบริษัท', required: true },
       { key: 'code', label: 'รหัส' },
     ],
+    sampleRows: [
+      { 'ชื่อบริษัท': 'บริษัท ABC จำกัด', 'รหัส': 'COM001' },
+      { 'ชื่อบริษัท': 'บริษัท XYZ จำกัด', 'รหัส': 'COM002' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อบริษัท'] || row['Name'] || 'ไม่ระบุ',
       code: row['code'] || row['รหัส'] || row['Code'] || 'ไม่ระบุ',
