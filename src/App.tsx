@@ -26,6 +26,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/master-data" element={<ProtectedRoute allowedRoles={["admin"]}><MasterData /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute allowedRoles={["admin"]}><UserManagement /></ProtectedRoute>} />
             <Route path="/complaints" element={<ProtectedRoute><ComplaintList /></ProtectedRoute>} />
             <Route path="/complaints/new" element={<ProtectedRoute><ComplaintForm /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
