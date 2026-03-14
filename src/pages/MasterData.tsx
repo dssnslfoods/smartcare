@@ -48,6 +48,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'code', label: 'รหัส' },
       { key: 'company_name', label: 'บริษัท (ชื่อ)' },
     ],
+    sampleRows: [
+      { 'ชื่อสาขา': 'สาขากรุงเทพ', 'รหัส': 'BR001', 'บริษัท (ชื่อ)': 'บริษัท ABC จำกัด' },
+      { 'ชื่อสาขา': 'สาขาเชียงใหม่', 'รหัส': 'BR002', 'บริษัท (ชื่อ)': 'บริษัท ABC จำกัด' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อสาขา'] || row['Name'] || 'ไม่ระบุ',
       code: row['code'] || row['รหัส'] || row['Code'] || 'ไม่ระบุ',
