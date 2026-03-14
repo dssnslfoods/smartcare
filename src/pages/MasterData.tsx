@@ -123,6 +123,10 @@ const TABLE_CONFIGS: TableConfig[] = [
       { key: 'name', label: 'ชื่อประเภทย่อย', required: true },
       { key: 'problem_type_name', label: 'ประเภทปัญหา (ชื่อ)' },
     ],
+    sampleRows: [
+      { 'ชื่อประเภทย่อย': 'พบแมลง', 'ประเภทปัญหา (ชื่อ)': 'สิ่งแปลกปลอม' },
+      { 'ชื่อประเภทย่อย': 'สีผิดปกติ', 'ประเภทปัญหา (ชื่อ)': 'คุณภาพผลิตภัณฑ์' },
+    ],
     transform: (row) => ({
       name: row['name'] || row['ชื่อประเภทย่อย'] || row['Name'] || 'ไม่ระบุ',
       _problem_type_name: row['problem_type_name'] || row['ประเภทปัญหา'] || row['Problem Type'] || '',
