@@ -136,8 +136,8 @@ export default function ComplaintList() {
 
         <div className="space-y-4">
         {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
+        <div className="glass rounded-2xl p-4">
+          <CardContent className="p-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
