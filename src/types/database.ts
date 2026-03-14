@@ -26,9 +26,9 @@ export interface Database {
         Update: { id?: string; name?: string; code?: string | null; created_at?: string | null };
       };
       categories: {
-        Row: { id: string; product_group_id: string; name: string; code: string | null; created_at: string | null };
-        Insert: { id?: string; product_group_id: string; name: string; code?: string | null; created_at?: string | null };
-        Update: { id?: string; product_group_id?: string; name?: string; code?: string | null; created_at?: string | null };
+        Row: { id: string; product_group_id: string | null; name: string; code: string | null; created_at: string | null };
+        Insert: { id?: string; product_group_id?: string | null; name: string; code?: string | null; created_at?: string | null };
+        Update: { id?: string; product_group_id?: string | null; name?: string; code?: string | null; created_at?: string | null };
       };
       problem_types: {
         Row: { id: string; name: string; code: string | null; created_at: string | null };

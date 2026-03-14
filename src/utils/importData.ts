@@ -45,14 +45,12 @@ export async function importLookupData(onProgress: (msg: string) => void) {
   productGroups?.forEach(pg => { pgMap[pg.name] = pg.id; });
   onProgress(`✅ Product Groups: ${productGroups?.length || 0} records`);
 
-  // 4. Categories - need a product_group_id, use first one as default
+  // 4. Categories
   onProgress('กำลัง import Categories...');
-  const defaultPgId = productGroups?.[0]?.id;
   const { data: categories } = await supabase.from('categories').upsert(
     categoriesData.map(c => ({
       name: c.name,
       code: c.code,
-      product_group_id: defaultPgId,
     })),
     { onConflict: 'code' }
   ).select();

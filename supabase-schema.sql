@@ -31,9 +31,9 @@ CREATE TABLE public.product_groups (
 -- 4. Categories
 CREATE TABLE public.categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_group_id UUID REFERENCES public.product_groups(id) ON DELETE CASCADE NOT NULL,
+  product_group_id UUID REFERENCES public.product_groups(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
-  code TEXT,
+  code TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

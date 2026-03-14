@@ -15,7 +15,7 @@ interface LookupData {
   companies: LookupItem[];
   branches: (LookupItem & { company_id: string })[];
   product_groups: LookupItem[];
-  categories: (LookupItem & { product_group_id: string })[];
+  categories: LookupItem[];
   problem_types: LookupItem[];
   problem_sub_types: (LookupItem & { problem_type_id: string })[];
   callers: LookupItem[];
@@ -60,7 +60,7 @@ export default function ComplaintForm() {
           supabase.from("companies").select("id, name").order("name"),
           supabase.from("branches").select("id, name, company_id").order("name"),
           supabase.from("product_groups").select("id, name").order("name"),
-          supabase.from("categories").select("id, name, product_group_id").order("name"),
+          supabase.from("categories").select("id, name").order("name"),
           supabase.from("problem_types").select("id, name").order("name"),
           supabase.from("problem_sub_types").select("id, name, problem_type_id").order("name"),
           supabase.from("callers").select("id, name").order("name"),
@@ -93,7 +93,7 @@ export default function ComplaintForm() {
     setForm(prev => {
       const next = { ...prev, [key]: value };
       if (key === "company_id") next.branch_id = "";
-      if (key === "product_group_id") next.category_id = "";
+      // categories are now independent, no cascading reset needed
       if (key === "problem_type_id") next.problem_sub_type_id = "";
       return next;
     });
@@ -101,8 +101,7 @@ export default function ComplaintForm() {
 
   const filteredBranches = form.company_id
     ? lookup.branches.filter(b => b.company_id === form.company_id) : lookup.branches;
-  const filteredCategories = form.product_group_id
-    ? lookup.categories.filter(c => c.product_group_id === form.product_group_id) : lookup.categories;
+  const filteredCategories = lookup.categories;
   const filteredSubTypes = form.problem_type_id
     ? lookup.problem_sub_types.filter(s => s.problem_type_id === form.problem_type_id) : lookup.problem_sub_types;
 
