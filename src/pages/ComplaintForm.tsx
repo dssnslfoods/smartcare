@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Save, Plus, Loader2, CheckCircle2 } from "lucide-react";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -177,8 +182,24 @@ export default function ComplaintForm() {
                     <Input id="complaint_number" placeholder="เช่น QAS.2.2025.09/001" value={form.complaint_number} onChange={e => setField("complaint_number", e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="complaint_date" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่</Label>
-                    <Input id="complaint_date" type="date" value={form.complaint_date} onChange={e => setField("complaint_date", e.target.value)} />
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.complaint_date && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.complaint_date ? format(new Date(form.complaint_date), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={form.complaint_date ? new Date(form.complaint_date) : undefined}
+                          onSelect={(date) => setField("complaint_date", date ? format(date, "yyyy-MM-dd") : "")}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
@@ -299,8 +320,24 @@ export default function ComplaintForm() {
                     <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={2} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="resolved_at" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข</Label>
-                    <Input id="resolved_at" type="date" value={form.resolved_at} onChange={e => setField("resolved_at", e.target.value)} />
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.resolved_at && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.resolved_at ? format(new Date(form.resolved_at), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่แก้ไข</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={form.resolved_at ? new Date(form.resolved_at) : undefined}
+                          onSelect={(date) => setField("resolved_at", date ? format(date, "yyyy-MM-dd") : "")}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
