@@ -26,7 +26,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">บริษัท</label>
         <select className="filter-select" value={companyId} onChange={e => onCompanyChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {(companies || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
@@ -34,7 +34,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">สาขา</label>
         <select className="filter-select" value={branchId} onChange={e => onBranchChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {(branches || []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </div>
 
@@ -42,7 +42,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">Status</label>
         <select className="filter-select" value={status} onChange={e => onStatusChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+          {(statuses || []).map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
@@ -50,7 +50,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">หมวดหมู่</label>
         <select className="filter-select" value={category} onChange={e => onCategoryChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          {(categories || []).map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
     </div>
