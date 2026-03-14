@@ -394,16 +394,34 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
   // ── Load records ─────────────────────────────────────────────────────────────
   const loadRecords = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase
-      .from(config.tableName as any)
-      .select(config.fetchSelect) as any)
-      .order('created_at', { ascending: false })
-      .limit(200);
+    try {
+      let { data, error } = await (supabase
+        .from(config.tableName as any)
+        .select(config.fetchSelect) as any)
+        .order('created_at', { ascending: false })
+        .limit(200);
 
-    if (error) {
-      toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
-    } else {
-      setRecords(data || []);
+      // If join fails (FK column not yet in DB), retry with base columns only
+      if (error) {
+        const baseSelect = config.fetchSelect
+          .replace(/,\s*[a-zA-Z_]+:[a-zA-Z_]+\([^)]*\)/g, '')
+          .trim();
+        const retry = await (supabase
+          .from(config.tableName as any)
+          .select(baseSelect) as any)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        data = retry.data;
+        error = retry.error;
+      }
+
+      if (error) {
+        toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+      } else {
+        setRecords(data || []);
+      }
+    } catch (e: any) {
+      toast({ title: 'เกิดข้อผิดพลาด', description: e.message, variant: 'destructive' });
     }
     setLoading(false);
   }, [config, toast]);
