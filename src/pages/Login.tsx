@@ -107,7 +107,13 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground/60 pt-2">
+          <div className="border-t border-border/30 pt-4 mt-2">
+            <p className="text-center text-sm italic text-muted-foreground/80 leading-relaxed">
+              "ทุกเสียงร้องเรียน คือโอกาสในการพัฒนา<br/>ทุกความใส่ใจ คือจุดเริ่มต้นของความไว้วางใจ"
+            </p>
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground/60 pt-1">
             © 2026 Smart Care — ใส่ใจทุกเสียงร้องเรียน
           </p>
         </div>
