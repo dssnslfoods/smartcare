@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Database } from "lucide-react";
-import { getData } from "@/data/mockData";
+import { Database, Loader2 } from "lucide-react";
+import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import FilterBar from "@/components/dashboard/FilterBar";
 import OverviewTab from "@/components/dashboard/OverviewTab";
 import TrendsTab from "@/components/dashboard/TrendsTab";
@@ -21,13 +21,13 @@ const TABS = [
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [company, setCompany] = useState("nsl");
-  const [branch, setBranch] = useState("ALL");
+  const [companyId, setCompanyId] = useState("ALL");
+  const [branchId, setBranchId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
-  const [channel, setChannel] = useState("ALL");
   const [category, setCategory] = useState("ALL");
 
-  const data = getData(company, branch);
+  const { options, loading: optionsLoading } = useFilterOptions();
+  const { data, loading, count } = useComplaintsData(companyId, branchId, status, category);
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,10 +36,10 @@ export default function Index() {
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-wide">
-              NSL Foods Complaint Analysis Dashboard
+              Complaint Analysis Dashboard
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {data.branch} | ข้อมูลตั้งแต่ มกราคม 2025 - มีนาคม 2026
+              {data.company} - {data.branch} | {count} รายการ
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -57,9 +57,18 @@ export default function Index() {
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-6">
         {/* Filter Bar */}
         <FilterBar
-          company={company} branch={branch} status={status} channel={channel} category={category}
-          onCompanyChange={setCompany} onBranchChange={setBranch}
-          onStatusChange={setStatus} onChannelChange={setChannel} onCategoryChange={setCategory}
+          companies={options.companies}
+          branches={options.branches.filter(b => companyId === "ALL" || b.company_id === companyId)}
+          statuses={options.statuses}
+          categories={options.categories}
+          companyId={companyId}
+          branchId={branchId}
+          status={status}
+          category={category}
+          onCompanyChange={(v) => { setCompanyId(v); setBranchId("ALL"); }}
+          onBranchChange={setBranchId}
+          onStatusChange={setStatus}
+          onCategoryChange={setCategory}
         />
 
         {/* Navigation Tabs */}
@@ -75,13 +84,30 @@ export default function Index() {
           ))}
         </div>
 
-        {/* Tab Content */}
-        {activeTab === "overview" && <OverviewTab data={data} />}
-        {activeTab === "trends" && <TrendsTab data={data} />}
-        {activeTab === "problems" && <ProblemsTab data={data} />}
-        {activeTab === "groups" && <GroupsTab data={data} />}
-        {activeTab === "performance" && <PerformanceTab data={data} />}
-        {activeTab === "deep" && <DeepAnalysisTab data={data} />}
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-3 text-muted-foreground">กำลังโหลดข้อมูล...</span>
+          </div>
+        ) : count === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground text-lg">ไม่พบข้อมูล Complaint</p>
+            <p className="text-muted-foreground text-sm mt-2">
+              กรุณา Import ข้อมูลผ่านหน้า{" "}
+              <Link to="/master-data" className="text-primary underline">Master Data</Link>
+            </p>
+          </div>
+        ) : (
+          <>
+            {activeTab === "overview" && <OverviewTab data={data} />}
+            {activeTab === "trends" && <TrendsTab data={data} />}
+            {activeTab === "problems" && <ProblemsTab data={data} />}
+            {activeTab === "groups" && <GroupsTab data={data} />}
+            {activeTab === "performance" && <PerformanceTab data={data} />}
+            {activeTab === "deep" && <DeepAnalysisTab data={data} />}
+          </>
+        )}
       </div>
     </div>
   );
