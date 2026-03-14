@@ -163,6 +163,16 @@ interface ImportState {
   fileName: string;
 }
 
+function downloadTemplate(config: TableConfig) {
+  const headers = config.columns.map(c => c.label);
+  const ws = XLSX.utils.json_to_sheet(config.sampleRows, { header: headers });
+  // Set column widths
+  ws['!cols'] = headers.map(() => ({ wch: 25 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, config.label);
+  XLSX.writeFile(wb, `template_${config.id}.xlsx`);
+}
+
 function TableImporter({ config }: { config: TableConfig }) {
   const [state, setState] = useState<ImportState>({
     previewData: null,
