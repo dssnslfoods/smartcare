@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface RefData {
   companies: { id: string; name: string }[];
-  product_groups: { id: string; name: string }[];
+  categories: { id: string; name: string }[];
   problem_types: { id: string; name: string }[];
 }
 
@@ -175,47 +175,37 @@ const TAB_CONFIGS: TabConfig[] = [
     formFields: [
       { key: 'name', label: 'ชื่อหมวดหมู่', type: 'text', required: true, placeholder: 'กรอกชื่อหมวดหมู่' },
       { key: 'code', label: 'รหัส', type: 'text', placeholder: 'เช่น CAT001' },
-      { key: 'product_group_id', label: 'กลุ่มสินค้า', type: 'select', refKey: 'product_groups' },
     ],
     displayColumns: [
       { key: 'name', label: 'ชื่อหมวดหมู่' },
       { key: 'code', label: 'รหัส' },
-      { key: 'product_group_name', label: 'กลุ่มสินค้า' },
     ],
-    fetchSelect: 'id, name, code, product_groups:product_group_id(name)',
+    fetchSelect: 'id, name, code',
     toInsert: (form) => ({
       name: form.name,
       code: form.code || null,
-      product_group_id: form.product_group_id || null,
     }),
     toDisplayRow: (row) => ({
       name: row.name,
       code: row.code || '-',
-      product_group_name: (row.product_groups as any)?.name || '-',
     }),
     toExportRow: (row) => ({
       'ชื่อหมวดหมู่': row.name,
       'รหัส': row.code || '',
-      'กลุ่มสินค้า': (row.product_groups as any)?.name || '',
     }),
     importColumns: [
       { key: 'name', label: 'ชื่อหมวดหมู่', required: true },
       { key: 'code', label: 'รหัส' },
-      { key: 'product_group_name', label: 'กลุ่มสินค้า (ชื่อ)' },
     ],
     importSampleRows: [
-      { 'ชื่อหมวดหมู่': 'Food Safety', 'รหัส': 'CAT001', 'กลุ่มสินค้า (ชื่อ)': 'อาหารแปรรูป' },
-      { 'ชื่อหมวดหมู่': 'Food Quality', 'รหัส': 'CAT002', 'กลุ่มสินค้า (ชื่อ)': 'เครื่องดื่ม' },
+      { 'ชื่อหมวดหมู่': 'Food Safety', 'รหัส': 'CAT001' },
+      { 'ชื่อหมวดหมู่': 'Food Quality', 'รหัส': 'CAT002' },
+      { 'ชื่อหมวดหมู่': 'Food Law', 'รหัส': 'CAT003' },
     ],
-    toImportRows: (rows, refs) => {
-      const map: Record<string, string> = {};
-      refs.product_groups.forEach(pg => { map[pg.name] = pg.id; });
-      return rows.map(r => ({
-        name: r['name'] || r['ชื่อหมวดหมู่'] || 'ไม่ระบุ',
-        code: r['code'] || r['รหัส'] || null,
-        product_group_id: map[r['product_group_name'] || r['กลุ่มสินค้า (ชื่อ)'] || r['กลุ่มสินค้า'] || ''] || null,
-      }));
-    },
+    toImportRows: (rows) => rows.map(r => ({
+      name: r['name'] || r['ชื่อหมวดหมู่'] || 'ไม่ระบุ',
+      code: r['code'] || r['รหัส'] || null,
+    })),
   },
 
   // ── ประเภทปัญหา ───────────────────────────────────────────────────────────────
@@ -227,27 +217,47 @@ const TAB_CONFIGS: TabConfig[] = [
     formFields: [
       { key: 'name', label: 'ชื่อประเภทปัญหา', type: 'text', required: true, placeholder: 'กรอกชื่อประเภทปัญหา' },
       { key: 'code', label: 'รหัส', type: 'text', placeholder: 'เช่น PT001' },
+      { key: 'category_id', label: 'หมวดหมู่', type: 'select', refKey: 'categories' },
     ],
     displayColumns: [
       { key: 'name', label: 'ชื่อประเภทปัญหา' },
       { key: 'code', label: 'รหัส' },
+      { key: 'category_name', label: 'หมวดหมู่' },
     ],
-    fetchSelect: 'id, name, code',
-    toInsert: (form) => ({ name: form.name, code: form.code || null }),
-    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-' }),
-    toExportRow: (row) => ({ 'ชื่อประเภทปัญหา': row.name, 'รหัส': row.code || '' }),
+    fetchSelect: 'id, name, code, categories:category_id(name)',
+    toInsert: (form) => ({
+      name: form.name,
+      code: form.code || null,
+      category_id: form.category_id || null,
+    }),
+    toDisplayRow: (row) => ({
+      name: row.name,
+      code: row.code || '-',
+      category_name: (row.categories as any)?.name || '-',
+    }),
+    toExportRow: (row) => ({
+      'ชื่อประเภทปัญหา': row.name,
+      'รหัส': row.code || '',
+      'หมวดหมู่': (row.categories as any)?.name || '',
+    }),
     importColumns: [
       { key: 'name', label: 'ชื่อประเภท', required: true },
       { key: 'code', label: 'รหัส' },
+      { key: 'category_name', label: 'หมวดหมู่ (ชื่อ)' },
     ],
     importSampleRows: [
-      { 'ชื่อประเภท': 'สิ่งแปลกปลอม', 'รหัส': 'PT001' },
-      { 'ชื่อประเภท': 'คุณภาพผลิตภัณฑ์', 'รหัส': 'PT002' },
+      { 'ชื่อประเภท': 'สิ่งแปลกปลอม', 'รหัส': 'PT001', 'หมวดหมู่ (ชื่อ)': 'Food Safety' },
+      { 'ชื่อประเภท': 'คุณภาพผลิตภัณฑ์', 'รหัส': 'PT002', 'หมวดหมู่ (ชื่อ)': 'Food Quality' },
     ],
-    toImportRows: (rows) => rows.map(r => ({
-      name: r['name'] || r['ชื่อประเภท'] || r['ชื่อประเภทปัญหา'] || 'ไม่ระบุ',
-      code: r['code'] || r['รหัส'] || null,
-    })),
+    toImportRows: (rows, refs) => {
+      const map: Record<string, string> = {};
+      refs.categories.forEach(c => { map[c.name] = c.id; });
+      return rows.map(r => ({
+        name: r['name'] || r['ชื่อประเภท'] || r['ชื่อประเภทปัญหา'] || 'ไม่ระบุ',
+        code: r['code'] || r['รหัส'] || null,
+        category_id: map[r['category_name'] || r['หมวดหมู่ (ชื่อ)'] || r['หมวดหมู่'] || ''] || null,
+      }));
+    },
   },
 
   // ── ประเภทย่อย ────────────────────────────────────────────────────────────────
@@ -794,20 +804,20 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
 export default function MasterData() {
   const [refs, setRefs] = useState<RefData>({
     companies: [],
-    product_groups: [],
+    categories: [],
     problem_types: [],
   });
 
   const loadRefs = useCallback(async () => {
-    const [{ data: companies }, { data: product_groups }, { data: problem_types }] =
+    const [{ data: companies }, { data: categories }, { data: problem_types }] =
       await Promise.all([
         supabase.from('companies').select('id, name').order('name'),
-        supabase.from('product_groups').select('id, name').order('name'),
+        supabase.from('categories').select('id, name').order('name'),
         supabase.from('problem_types').select('id, name').order('name'),
       ]);
     setRefs({
       companies: (companies as any) || [],
-      product_groups: (product_groups as any) || [],
+      categories: (categories as any) || [],
       problem_types: (problem_types as any) || [],
     });
   }, []);
