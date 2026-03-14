@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Lock, Mail } from "lucide-react";
+import { Loader2, Lock, Mail, HeartHandshake } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import loginBg from "@/assets/login-bg.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -29,13 +30,30 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden">
+      {/* Background Image */}
+      <img
+        src={loginBg}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-background/40" />
+
+      <div className="relative z-10 w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <img src={logoImg} alt="Smart Care" className="mx-auto w-32 h-32 mb-4" />
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Smart Care v.1.0</h1>
-          <p className="text-sm text-muted-foreground mt-1">ระบบจัดการข้อร้องเรียนอัจฉริยะ</p>
+          <div className="relative inline-block mb-4">
+            <div className="absolute -inset-3 rounded-full bg-primary/20 blur-xl animate-pulse" />
+            <img src={logoImg} alt="Smart Care" className="relative mx-auto w-28 h-28 drop-shadow-2xl" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight drop-shadow-lg">
+            Smart Care <span className="text-primary">v.1.0</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-1.5">
+            <HeartHandshake className="h-4 w-4 text-accent" />
+            ระบบจัดการข้อร้องเรียนอัจฉริยะ
+          </p>
         </div>
 
         {/* Login Card */}
@@ -88,6 +106,10 @@ export default function Login() {
               )}
             </Button>
           </form>
+
+          <p className="text-center text-xs text-muted-foreground/60 pt-2">
+            © 2026 Smart Care — ใส่ใจทุกเสียงร้องเรียน
+          </p>
         </div>
       </div>
     </div>
