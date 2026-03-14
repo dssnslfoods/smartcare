@@ -26,7 +26,7 @@ export default function FilterBar({
         <label className="text-xs text-muted-foreground">บริษัท</label>
         <select className="filter-select" value={companyId} onChange={e => onCompanyChange(e.target.value)}>
           <option value="ALL">ทั้งหมด</option>
-          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {(companies || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
