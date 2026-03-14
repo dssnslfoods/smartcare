@@ -39,7 +39,7 @@ export default function TopNavBar() {
             <Activity className="h-4 w-4 text-white" />
           </div>
           <span className="text-sm font-bold tracking-wide text-foreground group-hover:text-primary transition-colors">
-            CMS
+            Smart Care
           </span>
         </Link>
 

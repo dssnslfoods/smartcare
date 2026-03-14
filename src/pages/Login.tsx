@@ -35,8 +35,8 @@ export default function Login() {
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}>
             <Lock className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Complaint Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">เข้าสู่ระบบเพื่อจัดการข้อร้องเรียน</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Smart Care v.1.0</h1>
+          <p className="text-sm text-muted-foreground mt-1">ระบบจัดการข้อร้องเรียนอัจฉริยะ</p>
         </div>
 
         {/* Login Card */}
