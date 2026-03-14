@@ -64,43 +64,60 @@ export default function GroupsTab({ data }: Props) {
           Heatmap: กลุ่มสินค้า x ประเภทปัญหา
         </div>
         <div className="overflow-x-auto">
-          <table className="heatmap-table">
-            <thead>
-              <tr>
-                <th className="text-left p-2">กลุ่ม</th>
-                {problems.map(p => <th key={p}>{p}</th>)}
-                <th>รวม</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map(g => {
-                let rowTotal = 0;
-                return (
-                  <tr key={g}>
-                    <td className="text-left font-medium text-foreground">{g}</td>
-                    {problems.map(p => {
-                      const item = data.group_problem_matrix.find(x => x.group === g && x.problem === p);
-                      const val = item?.count || 0;
-                      rowTotal += val;
-                      const intensity = Math.min(val / 106, 1);
-                      const bg = val === 0
-                        ? "hsl(217,33%,17%)"
-                        : `rgba(14,165,233,${0.15 + intensity * 0.85})`;
-                      return (
-                        <td key={p} style={{
-                          background: bg,
-                          color: intensity > 0.5 ? "#fff" : "#94a3b8"
-                        }}>{val}</td>
-                      );
-                    })}
-                    <td className="font-bold text-foreground" style={{ background: "hsl(215,19%,27%)" }}>
-                      {rowTotal}
-                    </td>
+          {(() => {
+            const maxVal = Math.max(...data.group_problem_matrix.map(x => x.count), 1);
+            
+            const getHeatColor = (val: number) => {
+              if (val === 0) return "transparent";
+              const ratio = val / maxVal;
+              // Modern heatmap palette: Cyan (Low) -> Yellow (Mid) -> Crimson (High)
+              if (ratio < 0.3) return `rgba(6,182,212, ${0.4 + (ratio/0.3) * 0.4})`; // Cyan scale
+              if (ratio < 0.7) return `rgba(234,179,8, ${0.5 + ((ratio-0.3)/0.4) * 0.4})`; // Yellow/Gold
+              return `rgba(239,68,68, ${0.6 + ((ratio-0.7)/0.3) * 0.4})`; // Red/Crimson
+            };
+
+            return (
+              <table className="heatmap-table">
+                <thead>
+                  <tr>
+                    <th className="text-left p-2">กลุ่ม</th>
+                    {problems.map(p => <th key={p}>{p}</th>)}
+                    <th>รวม</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {groups.map(g => {
+                    let rowTotal = 0;
+                    return (
+                      <tr key={g}>
+                        <td className="text-left font-medium text-foreground">{g}</td>
+                        {problems.map(p => {
+                          const item = data.group_problem_matrix.find(x => x.group === g && x.problem === p);
+                          const val = item?.count || 0;
+                          rowTotal += val;
+                          const ratio = val / maxVal;
+                          const bg = getHeatColor(val);
+                          
+                          return (
+                            <td key={p} style={{
+                              background: bg,
+                              color: ratio > 0.4 ? "#fff" : "rgba(255,255,255,0.7)",
+                              fontWeight: ratio > 0.7 ? "700" : "400",
+                              transition: "all 0.3s ease",
+                              boxShadow: ratio > 0.8 ? "inset 0 0 10px rgba(0,0,0,0.2)" : "none"
+                            }}>{val}</td>
+                          );
+                        })}
+                        <td className="font-bold text-white bg-slate-800/80">
+                          {rowTotal}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+          })()}
         </div>
       </div>
     </div>
