@@ -10,6 +10,7 @@ import ProblemsTab from "@/components/dashboard/ProblemsTab";
 import GroupsTab from "@/components/dashboard/GroupsTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
+import MapTab from "@/components/dashboard/MapTab";
 import Footer from "@/components/Footer";
 
 const TABS = [
@@ -19,6 +20,7 @@ const TABS = [
   { id: "groups", label: "กลุ่มสินค้า" },
   { id: "performance", label: "ประสิทธิภาพ" },
   { id: "deep", label: "เชิงลึก" },
+  { id: "map", label: "แผนที่ CDC" },
 ];
 
 export default function Index() {
@@ -103,6 +105,7 @@ export default function Index() {
             {activeTab === "groups" && <GroupsTab data={data} />}
             {activeTab === "performance" && <PerformanceTab data={data} />}
             {activeTab === "deep" && <DeepAnalysisTab data={data} />}
+            {activeTab === "map" && <MapTab />}
           </>
         )}
       </div>
