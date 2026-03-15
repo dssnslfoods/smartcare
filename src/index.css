@@ -146,6 +146,21 @@
   .kpi-label {
     @apply text-sm text-muted-foreground mt-1.5 font-medium;
   }
+  .kpi-icon-badge {
+    @apply w-9 h-9 rounded-xl flex items-center justify-center;
+  }
+  .kpi-card-gradient-cyan {
+    border-left: 3px solid hsl(195 90% 55%);
+  }
+  .kpi-card-gradient-green {
+    border-left: 3px solid hsl(160 70% 48%);
+  }
+  .kpi-card-gradient-yellow {
+    border-left: 3px solid hsl(42 95% 58%);
+  }
+  .kpi-card-gradient-red {
+    border-left: 3px solid hsl(0 80% 60%);
+  }
 
   /* ===== Chart Cards ===== */
   .chart-card {
@@ -239,6 +254,32 @@
   .heatmap-table td {
     @apply p-2 text-center font-semibold;
     border: 1px solid hsl(220 15% 16%);
+  }
+
+  /* ===== Fade-in animation ===== */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeSlideUp 0.4s ease-out both;
+  }
+
+  /* ===== Status Badge ===== */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+  .status-badge-success {
+    background: hsl(160 70% 48% / 0.15);
+    color: hsl(160 70% 55%);
+  }
+  .status-badge-warning {
+    background: hsl(42 95% 58% / 0.15);
+    color: hsl(42 95% 65%);
+  }
+  .status-badge-danger {
+    background: hsl(0 80% 60% / 0.15);
+    color: hsl(0 80% 65%);
   }
 
   /* ===== Scrollbar ===== */

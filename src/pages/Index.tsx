@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -14,13 +14,13 @@ import MapTab from "@/components/dashboard/MapTab";
 import Footer from "@/components/Footer";
 
 const TABS = [
-  { id: "overview", label: "ภาพรวม" },
-  { id: "trends", label: "แนวโน้มรายเดือน" },
-  { id: "problems", label: "ประเภทปัญหา" },
-  { id: "groups", label: "กลุ่มสินค้า" },
-  { id: "performance", label: "ประสิทธิภาพ" },
-  { id: "deep", label: "เชิงลึก" },
-  { id: "map", label: "แผนที่ CDC" },
+  { id: "overview", label: "ภาพรวม", icon: LayoutDashboard },
+  { id: "trends", label: "แนวโน้ม", icon: TrendingUp },
+  { id: "problems", label: "ประเภทปัญหา", icon: AlertTriangle },
+  { id: "groups", label: "กลุ่มสินค้า", icon: Factory },
+  { id: "performance", label: "ประสิทธิภาพ", icon: Timer },
+  { id: "deep", label: "เชิงลึก", icon: Microscope },
+  { id: "map", label: "แผนที่ CDC", icon: MapPin },
 ];
 
 export default function Index() {
@@ -41,13 +41,25 @@ export default function Index() {
 
       <div className="max-w-[1440px] mx-auto px-6 py-6">
         {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Complaint Analysis
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {data.company} · {data.branch} · <span className="text-primary font-semibold">{count}</span> รายการ
-          </p>
+        <div className="mb-6 flex items-end justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              Complaint Analysis
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {data.company} · {data.branch} · <span className="text-primary font-semibold">{count.toLocaleString()}</span> รายการ
+            </p>
+          </div>
+          {!loading && count > 0 && (
+            <div className="flex items-center gap-3">
+              <span className={`status-badge ${data.kpi.close_rate >= 70 ? "status-badge-success" : data.kpi.close_rate >= 40 ? "status-badge-warning" : "status-badge-danger"}`}>
+                Close Rate: {data.kpi.close_rate}%
+              </span>
+              <span className="status-badge status-badge-warning">
+                Avg: {data.kpi.avg_response_days} วัน
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Filter Bar */}
@@ -72,15 +84,19 @@ export default function Index() {
 
         {/* Navigation Tabs */}
         <div className="flex gap-1 mb-6 glass rounded-2xl p-1.5 overflow-x-auto">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              className={`nav-pill ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                className={`nav-pill flex items-center gap-1.5 ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Content */}

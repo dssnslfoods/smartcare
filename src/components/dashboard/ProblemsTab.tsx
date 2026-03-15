@@ -2,54 +2,96 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from "recharts";
+import { AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 
-const COLORS = ["#ef4444", "#f59e0b", "#0ea5e9", "#8b5cf6", "#22c55e"];
+const COLORS = ["#ef4444", "#f59e0b", "#0ea5e9", "#8b5cf6", "#22c55e", "#06b6d4", "#f97316", "#ec4899"];
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#a855f7", "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 interface Props { data: CompanyData }
 
+const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
+
+function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  if (percent < 0.05) return null;
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
+
 export default function ProblemsTab({ data }: Props) {
   const problemData = Object.entries(data.problem_type).map(([name, value]) => ({ name, value }));
+  const totalProblems = problemData.reduce((s, d) => s + d.value, 0);
   const closeRateData = Object.entries(data.close_rate_by_type).map(([name, v]) => ({
-    name, rate: v.rate,
-    fill: v.rate > 50 ? "#22c55e" : v.rate > 30 ? "#fbbf24" : "#ef4444"
+    name, rate: v.rate, total: v.total,
+    fill: v.rate >= 70 ? "#22c55e" : v.rate >= 40 ? "#fbbf24" : "#ef4444"
   }));
   const subProblemData = Object.entries(data.sub_problem).map(([name, value]) => ({
     name: name.length > 30 ? name.substring(0, 30) + "..." : name, value
   }));
 
-  const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
+      {/* Problem type summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {problemData.slice(0, 5).map((d, i) => (
+          <div key={d.name} className="kpi-card py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold text-white" style={{ background: COLORS[i] }}>
+                {i + 1}
+              </span>
+              <span className="text-[11px] text-muted-foreground truncate">{d.name}</span>
+            </div>
+            <div className="text-xl font-bold text-foreground">{d.value}</div>
+            <div className="text-[10px] text-muted-foreground">{Math.round((d.value / totalProblems) * 100)}% ของทั้งหมด</div>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="chart-card">
           <div className="chart-title">
-            <span className="chart-icon" style={{ background: "rgba(239,68,68,0.2)" }}>⚠️</span>
+            <span className="chart-icon" style={{ background: "rgba(239,68,68,0.15)" }}>
+              <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+            </span>
             ประเภทปัญหาหลัก
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={problemData} cx="50%" cy="50%" outerRadius={100}
-                dataKey="value" label={({ percent }) => `${(percent * 100).toFixed(1)}%`}>
-                {problemData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+              <Pie
+                data={problemData} cx="50%" cy="50%"
+                innerRadius={60} outerRadius={105}
+                dataKey="value"
+                label={renderCustomLabel}
+                labelLine={false}
+                strokeWidth={2}
+                stroke="hsl(220 20% 7%)"
+              >
+                {problemData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip contentStyle={tooltipStyle} />
-              <Legend />
+              <Legend iconType="circle" iconSize={8} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
         <div className="chart-card">
           <div className="chart-title">
-            <span className="chart-icon" style={{ background: "rgba(34,197,94,0.2)" }}>✅</span>
+            <span className="chart-icon" style={{ background: "rgba(34,197,94,0.15)" }}>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            </span>
             อัตราปิดเคสตามประเภทปัญหา
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={closeRateData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(217,19%,27%)" />
-              <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" />
+              <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(v: number) => `${v}%`} />
               <YAxis type="category" dataKey="name" width={140} stroke="#94a3b8" tick={{ fontSize: 11 }} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v}%`} />
               <Bar dataKey="rate" radius={[0, 6, 6, 0]}>
@@ -62,7 +104,9 @@ export default function ProblemsTab({ data }: Props) {
 
       <div className="chart-card">
         <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(251,191,36,0.2)" }}>🔍</span>
+          <span className="chart-icon" style={{ background: "rgba(251,191,36,0.15)" }}>
+            <Search className="w-3.5 h-3.5 text-amber-400" />
+          </span>
           Top 15 ประเภทปัญหาย่อย
         </div>
         <ResponsiveContainer width="100%" height={500}>

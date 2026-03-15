@@ -1,6 +1,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
+import { BarChart3, GitBranch } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -38,13 +39,44 @@ export default function TrendsTab({ data }: Props) {
     "Complaint Service": d.foodService,
   }));
 
+  // Summary stats
+  const totalClosed = statusChart.reduce((s, m) => s + m["ปิดผู้ผลิต"], 0);
+  const totalOpen = statusChart.reduce((s, m) => s + m["ไม่ปิดผู้ผลิต"], 0);
+  const totalRd = statusChart.reduce((s, m) => s + m["ปิดเป็น RD"], 0);
+  const peakMonth = categoryStackData.reduce((best, m) => {
+    const total = m["Recall"] + m["Complaint Food Safety"] + m["Complaint Food Quality"] + m["Complaint Food Law"] + m["Complaint Service"];
+    return total > best.total ? { name: m.name, total } : best;
+  }, { name: "", total: 0 });
+
   const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
+      {/* Quick summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="kpi-card text-center py-3">
+          <div className="text-lg font-bold text-emerald-400">{totalClosed}</div>
+          <div className="text-[11px] text-muted-foreground">ปิดผู้ผลิต</div>
+        </div>
+        <div className="kpi-card text-center py-3">
+          <div className="text-lg font-bold text-red-400">{totalOpen}</div>
+          <div className="text-[11px] text-muted-foreground">ไม่ปิดผู้ผลิต</div>
+        </div>
+        <div className="kpi-card text-center py-3">
+          <div className="text-lg font-bold text-amber-400">{totalRd}</div>
+          <div className="text-[11px] text-muted-foreground">ปิดเป็น RD</div>
+        </div>
+        <div className="kpi-card text-center py-3">
+          <div className="text-lg font-bold text-sky-400">{peakMonth.name}</div>
+          <div className="text-[11px] text-muted-foreground">เดือนที่พบมากสุด ({peakMonth.total})</div>
+        </div>
+      </div>
+
       <div className="chart-card">
         <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(168,85,247,0.2)" }}>📊</span>
+          <span className="chart-icon" style={{ background: "rgba(168,85,247,0.15)" }}>
+            <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
+          </span>
           แนวโน้ม Complaint รายเดือน ตามหมวดหมู่ (Stacked)
         </div>
         <ResponsiveContainer width="100%" height={350}>
@@ -53,7 +85,7 @@ export default function TrendsTab({ data }: Props) {
             <XAxis dataKey="name" stroke="#94a3b8" />
             <YAxis stroke="#94a3b8" />
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend />
+            <Legend iconType="circle" iconSize={8} />
             {Object.entries(CAT_COLORS).map(([key, color], i, arr) => (
               <Bar
                 key={key}
@@ -69,7 +101,9 @@ export default function TrendsTab({ data }: Props) {
 
       <div className="chart-card">
         <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(34,197,94,0.2)" }}>📊</span>
+          <span className="chart-icon" style={{ background: "rgba(34,197,94,0.15)" }}>
+            <GitBranch className="w-3.5 h-3.5 text-emerald-400" />
+          </span>
           สถานะการปิดเคสรายเดือน
         </div>
         <ResponsiveContainer width="100%" height={350}>
@@ -78,7 +112,7 @@ export default function TrendsTab({ data }: Props) {
             <XAxis dataKey="name" stroke="#94a3b8" />
             <YAxis stroke="#94a3b8" />
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend />
+            <Legend iconType="circle" iconSize={8} />
             <Bar dataKey="ปิดผู้ผลิต" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} />
             <Bar dataKey="ไม่ปิดผู้ผลิต" stackId="a" fill="#ef4444" />
             <Bar dataKey="ปิดเป็น RD" stackId="a" fill="#fbbf24" />

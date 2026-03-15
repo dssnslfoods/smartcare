@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
+import { Factory, Users, Grid3X3 } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#a855f7"];
@@ -70,12 +71,12 @@ export default function GroupsTab({ data }: Props) {
   const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="chart-card">
           <div className="chart-title flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <span className="chart-icon" style={{ background: "rgba(167,139,250,0.2)" }}>🏭</span>
+              <span className="chart-icon" style={{ background: "rgba(167,139,250,0.15)" }}><Factory className="w-3.5 h-3.5 text-violet-400" /></span>
               จำนวน Complaint ตามกลุ่มสินค้า
             </div>
             {hasCDC && (
@@ -108,7 +109,7 @@ export default function GroupsTab({ data }: Props) {
 
         <div className="chart-card">
           <div className="chart-title">
-            <span className="chart-icon" style={{ background: "rgba(249,115,22,0.2)" }}>👤</span>
+            <span className="chart-icon" style={{ background: "rgba(249,115,22,0.15)" }}><Users className="w-3.5 h-3.5 text-orange-400" /></span>
             ช่องทางการแจ้งปัญหา
           </div>
           <ResponsiveContainer width="100%" height={350}>
@@ -128,7 +129,7 @@ export default function GroupsTab({ data }: Props) {
       <div className="chart-card">
         <div className="chart-title flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <span className="chart-icon" style={{ background: "rgba(6,182,212,0.2)" }}>🗺️</span>
+            <span className="chart-icon" style={{ background: "rgba(6,182,212,0.15)" }}><Grid3X3 className="w-3.5 h-3.5 text-cyan-400" /></span>
             Heatmap: กลุ่มสินค้า x ประเภทปัญหา
           </div>
           {hasCDC && (
