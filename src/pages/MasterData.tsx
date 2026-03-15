@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database,
   Building2, GitBranch, Package, Tag, AlertTriangle, List, Users,
-  Download, Plus, RefreshCw, FileUp, Pencil, Trash2, Save, X, Flag, Zap,
+  Download, Plus, RefreshCw, FileUp, Pencil, Trash2, Save, X, Flag, Zap, Search,
 } from 'lucide-react';
 import TopNavBar from '@/components/TopNavBar';
 import { Button } from '@/components/ui/button';
@@ -517,6 +517,9 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
 
   // Import panel
   const [showImport, setShowImport] = useState(false);
+
+  // Filter/search
+  const [filterText, setFilterText] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<{ headers: string[]; rows: Record<string, any>[] } | null>(null);
   const [importing, setImporting] = useState(false);
@@ -652,13 +655,23 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
     }
   };
 
+  // ── Filter ────────────────────────────────────────────────────────────────────
+  const filteredRecords = filterText.trim()
+    ? records.filter(row => {
+        const display = config.toDisplayRow(row, refs);
+        return Object.values(display).some(v =>
+          String(v ?? '').toLowerCase().includes(filterText.toLowerCase())
+        );
+      })
+    : records;
+
   // ── Select helpers ────────────────────────────────────────────────────────────
-  const allSelected = records.length > 0 && records.every(r => selectedIds.has(r.id));
+  const allSelected = filteredRecords.length > 0 && filteredRecords.every(r => selectedIds.has(r.id));
   const someSelected = selectedIds.size > 0;
 
   const toggleSelectAll = () => {
     if (allSelected) setSelectedIds(new Set());
-    else setSelectedIds(new Set(records.map(r => r.id)));
+    else setSelectedIds(new Set(filteredRecords.map(r => r.id)));
   };
 
   const toggleSelect = (id: string) => {
@@ -773,7 +786,9 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
           </div>
           <h2 className="text-lg font-semibold text-foreground">{config.label}</h2>
           {!loading && (
-            <Badge variant="secondary" className="text-xs">{records.length} รายการ</Badge>
+            <Badge variant="secondary" className="text-xs">
+              {filterText.trim() ? `${filteredRecords.length} / ${records.length}` : records.length} รายการ
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -863,6 +878,26 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
 
         {/* Data Table */}
         <Card className="border-border bg-card overflow-hidden">
+          {/* Search bar */}
+          <div className="px-4 pt-3 pb-2 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={filterText}
+                onChange={e => setFilterText(e.target.value)}
+                placeholder="ค้นหา..."
+                className="h-8 text-sm pl-8 pr-8"
+              />
+              {filterText && (
+                <button
+                  onClick={() => setFilterText('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center h-40 text-muted-foreground text-sm gap-2">
@@ -872,6 +907,11 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
               <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm gap-2">
                 <Database className="h-8 w-8 opacity-30" />
                 <span>ยังไม่มีข้อมูล กรุณาเพิ่มรายการหรือ Import</span>
+              </div>
+            ) : filteredRecords.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm gap-2">
+                <Search className="h-8 w-8 opacity-30" />
+                <span>ไม่พบรายการที่ค้นหา</span>
               </div>
             ) : (
               <div className="overflow-auto max-h-[520px]">
@@ -895,7 +935,7 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {records.map((row, i) => {
+                    {filteredRecords.map((row, i) => {
                       const isEditing = editingId === row.id;
                       const isSelected = selectedIds.has(row.id);
                       const display = config.toDisplayRow(row, refs);
