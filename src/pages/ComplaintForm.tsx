@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Save, Plus, Loader2, CheckCircle2, CalendarIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
@@ -21,19 +21,22 @@ interface LookupData {
   branches: (LookupItem & { company_id: string })[];
   product_groups: LookupItem[];
   categories: LookupItem[];
-  problem_types: LookupItem[];
+  problem_types: (LookupItem & { category_id: string | null })[];
   problem_sub_types: (LookupItem & { problem_type_id: string })[];
   callers: LookupItem[];
+  statuses: (LookupItem & { code: string | null })[];
+  priorities: (LookupItem & { code: string })[];
 }
 
 const INITIAL_FORM = {
   complaint_number: "", complaint_date: "", company_id: "", branch_id: "",
   product_group_id: "", category_id: "", problem_type_id: "", problem_sub_type_id: "",
-  caller_id: "", description: "", status: "ปิดผู้ผลิต", priority: "medium",
+  caller_id: "", description: "", status: "", priority: "",
   resolution: "", resolved_at: "",
 };
 
-const STATUSES = [
+// Hardcoded defaults in case database fetch fails
+const DEFAULT_STATUSES = [
   { value: "ปิดผู้ผลิต", label: "ปิดผู้ผลิต" },
   { value: "ไม่ปิดผู้ผลิต", label: "ไม่ปิดผู้ผลิต" },
   { value: "ปิดเป็น RD", label: "ปิดเป็น RD" },
@@ -41,7 +44,7 @@ const STATUSES = [
   { value: "คาดไม่ปิดผู้ผลิต", label: "คาดไม่ปิดผู้ผลิต" },
 ];
 
-const PRIORITIES = [
+const DEFAULT_PRIORITIES = [
   { value: "low", label: "ต่ำ" },
   { value: "medium", label: "กลาง" },
   { value: "high", label: "สูง" },
@@ -52,23 +55,28 @@ export default function ComplaintForm() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [lookup, setLookup] = useState<LookupData>({
     companies: [], branches: [], product_groups: [], categories: [],
-    problem_types: [], problem_sub_types: [], callers: [],
+    problem_types: [], problem_sub_types: [], callers: [], statuses: [], priorities: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [recentComplaints, setRecentComplaints] = useState<any[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const [listeningField, setListeningField] = useState<"description" | "resolution" | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     async function fetchLookups() {
-      const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers] =
+      const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities] =
         await Promise.all([
           supabase.from("companies").select("id, name").order("name"),
           supabase.from("branches").select("id, name, company_id").order("name"),
           supabase.from("product_groups").select("id, name").order("name"),
           supabase.from("categories").select("id, name").order("name"),
-          supabase.from("problem_types").select("id, name").order("name"),
+          supabase.from("problem_types").select("id, name, category_id").order("name"),
           supabase.from("problem_sub_types").select("id, name, problem_type_id").order("name"),
           supabase.from("callers").select("id, name").order("name"),
+          supabase.from("statuses").select("id, name, code").order("name"),
+          supabase.from("priorities").select("id, name, code").order("name"),
         ]);
       setLookup({
         companies: companies.data || [],
@@ -78,9 +86,47 @@ export default function ComplaintForm() {
         problem_types: problemTypes.data || [],
         problem_sub_types: (problemSubTypes.data || []) as any,
         callers: callers.data || [],
+        statuses: (statuses.data || []) as any,
+        priorities: (priorities.data || []) as any,
       });
       setLoading(false);
     }
+
+    // Initialize speech recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "th-TH";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            setForm(prev => {
+              if (listeningField === "resolution") {
+                return { ...prev, resolution: (prev.resolution + " " + transcript).trim() };
+              }
+              return { ...prev, description: (prev.description + " " + transcript).trim() };
+            });
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        toast.error(`ข้อผิดพลาด: ${event.error}`);
+      };
+
+      recognitionRef.current = recognition;
+    }
+
     fetchLookups();
     fetchRecent();
   }, []);
@@ -98,15 +144,30 @@ export default function ComplaintForm() {
     setForm(prev => {
       const next = { ...prev, [key]: value };
       if (key === "company_id") next.branch_id = "";
-      // categories are now independent, no cascading reset needed
+      if (key === "category_id") { next.problem_type_id = ""; next.problem_sub_type_id = ""; }
       if (key === "problem_type_id") next.problem_sub_type_id = "";
       return next;
     });
   }
 
+  function toggleMic(field: "description" | "resolution") {
+    if (!recognitionRef.current) {
+      toast.error("ไม่รองรับเสียงในเบราว์เซอร์นี้");
+      return;
+    }
+    if (isListening && listeningField === field) {
+      recognitionRef.current.stop();
+      setListeningField(null);
+    } else {
+      setListeningField(field);
+      recognitionRef.current.start();
+    }
+  }
+
   const filteredBranches = form.company_id
     ? lookup.branches.filter(b => b.company_id === form.company_id) : lookup.branches;
-  const filteredCategories = lookup.categories;
+  const filteredProblemTypes = form.category_id
+    ? lookup.problem_types.filter(p => p.category_id === form.category_id) : lookup.problem_types;
   const filteredSubTypes = form.problem_type_id
     ? lookup.problem_sub_types.filter(s => s.problem_type_id === form.problem_type_id) : lookup.problem_sub_types;
 
@@ -217,8 +278,8 @@ export default function ComplaintForm() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สาขา</Label>
-                    <Select value={form.branch_id || "_none"} onValueChange={v => setField("branch_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกสาขา" /></SelectTrigger>
+                    <Select value={form.branch_id || "_none"} onValueChange={v => setField("branch_id", v === "_none" ? "" : v)} disabled={form.company_id && filteredBranches.length === 0}>
+                      <SelectTrigger><SelectValue placeholder={form.company_id && filteredBranches.length === 0 ? "ไม่มีสาขาสำหรับบริษัทนี้" : "เลือกสาขา"} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_none">-- เลือกสาขา --</SelectItem>
                         {filteredBranches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
@@ -259,7 +320,7 @@ export default function ComplaintForm() {
                       <SelectTrigger><SelectValue placeholder="เลือกประเภทปัญหา" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_none">-- เลือกประเภทปัญหา --</SelectItem>
-                        {lookup.problem_types.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        {filteredProblemTypes.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -290,18 +351,18 @@ export default function ComplaintForm() {
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สถานะ</Label>
                     <Select value={form.status} onValueChange={v => setField("status", v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="เลือกสถานะ" /></SelectTrigger>
                       <SelectContent>
-                        {STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                        {(lookup.statuses.length > 0 ? lookup.statuses : DEFAULT_STATUSES).map(s => <SelectItem key={s.id || s.value} value={s.name || s.value}>{s.name || s.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ความสำคัญ</Label>
                     <Select value={form.priority} onValueChange={v => setField("priority", v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="เลือกความสำคัญ" /></SelectTrigger>
                       <SelectContent>
-                        {PRIORITIES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                        {(lookup.priorities.length > 0 ? lookup.priorities : DEFAULT_PRIORITIES).map(p => <SelectItem key={p.id || p.value} value={p.code || p.value}>{p.name || p.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -309,14 +370,56 @@ export default function ComplaintForm() {
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายละเอียด</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายละเอียด</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={listeningField === "description" ? "default" : "outline"}
+                      onClick={() => toggleMic("description")}
+                      className="gap-2"
+                    >
+                      {listeningField === "description" ? (
+                        <>
+                          <Mic className="h-4 w-4 animate-pulse" />
+                          กำลังฟัง...
+                        </>
+                      ) : (
+                        <>
+                          <MicOff className="h-4 w-4" />
+                          พูด
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <Textarea id="description" placeholder="อธิบายรายละเอียดข้อร้องเรียน..." value={form.description} onChange={e => setField("description", e.target.value)} rows={3} />
                 </div>
 
                 {/* Resolution & Resolved Date */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข</Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={listeningField === "resolution" ? "default" : "outline"}
+                        onClick={() => toggleMic("resolution")}
+                        className="gap-2"
+                      >
+                        {listeningField === "resolution" ? (
+                          <>
+                            <Mic className="h-4 w-4 animate-pulse" />
+                            กำลังฟัง...
+                          </>
+                        ) : (
+                          <>
+                            <MicOff className="h-4 w-4" />
+                            พูด
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={2} />
                   </div>
                   <div className="space-y-2">

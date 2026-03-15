@@ -71,6 +71,16 @@ export interface Database {
           created_at?: string | null; updated_at?: string | null;
         };
       };
+      statuses: {
+        Row: { id: string; name: string; code: string | null; created_at: string | null };
+        Insert: { id?: string; name: string; code?: string | null; created_at?: string | null };
+        Update: { id?: string; name?: string; code?: string | null; created_at?: string | null };
+      };
+      priorities: {
+        Row: { id: string; name: string; code: string; created_at: string | null };
+        Insert: { id?: string; name: string; code: string; created_at?: string | null };
+        Update: { id?: string; name?: string; code?: string; created_at?: string | null };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
