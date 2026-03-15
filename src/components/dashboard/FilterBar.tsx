@@ -1,4 +1,11 @@
-import { Filter } from "lucide-react";
+import { Filter, CalendarIcon, X } from "lucide-react";
+import { useState } from "react";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface FilterBarProps {
   companies: { id: string; name: string }[];
@@ -17,6 +24,53 @@ interface FilterBarProps {
   onCategoryChange: (v: string) => void;
   onDateFromChange: (v: string) => void;
   onDateToChange: (v: string) => void;
+}
+
+function DatePicker({
+  label, value, onChange, placeholder,
+}: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? new Date(value) : undefined;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "filter-select h-9 w-36 justify-start text-left font-normal px-3 gap-2 bg-transparent border-white/10 hover:bg-white/5",
+              !value && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+            <span className="text-xs truncate">
+              {selected ? format(selected, "d MMM yyyy", { locale: th }) : placeholder}
+            </span>
+            {value && (
+              <X
+                className="h-3 w-3 ml-auto shrink-0 opacity-50 hover:opacity-100"
+                onClick={e => { e.stopPropagation(); onChange(""); }}
+              />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={date => {
+              onChange(date ? format(date, "yyyy-MM-dd") : "");
+              setOpen(false);
+            }}
+            initialFocus
+            className="p-3 pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
 }
 
 export default function FilterBar({
@@ -65,25 +119,8 @@ export default function FilterBar({
           </select>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">ตั้งแต่</label>
-          <input 
-            type="date" 
-            className="filter-select" 
-            value={dateFrom} 
-            onChange={e => onDateFromChange(e.target.value)} 
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">ถึงวันที่</label>
-          <input 
-            type="date" 
-            className="filter-select" 
-            value={dateTo} 
-            onChange={e => onDateToChange(e.target.value)} 
-          />
-        </div>
+        <DatePicker label="ตั้งแต่" value={dateFrom} onChange={onDateFromChange} placeholder="เลือกวันเริ่ม" />
+        <DatePicker label="ถึงวันที่" value={dateTo} onChange={onDateToChange} placeholder="เลือกวันสิ้นสุด" />
       </div>
     </div>
   );

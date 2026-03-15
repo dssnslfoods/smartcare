@@ -12,7 +12,7 @@ interface ComplaintRow {
   created_at: string | null;
   companies: { id: string; name: string } | null;
   branches: { id: string; name: string } | null;
-  product_groups: { id: string; name: string } | null;
+  product_groups: { id: string; name: string; code: string | null } | null;
   categories: { id: string; name: string } | null;
   problem_types: { id: string; name: string } | null;
   problem_sub_types: { id: string; name: string } | null;
@@ -101,6 +101,14 @@ function buildCompanyData(
   // Group counts
   const groupArr = complaints.map(c => c.product_groups?.name || "ไม่ระบุ");
   const group = countMap(groupArr);
+
+  // Map group name → code (for CDC grouping toggle)
+  const group_code_map: Record<string, string> = {};
+  complaints.forEach(c => {
+    if (c.product_groups?.name) {
+      group_code_map[c.product_groups.name] = c.product_groups.code || "";
+    }
+  });
 
   // Caller counts
   const callerArr = complaints.map(c => c.callers?.name || "ไม่ระบุ");
@@ -217,6 +225,7 @@ function buildCompanyData(
     problem_type,
     sub_problem,
     group,
+    group_code_map,
     caller,
     close_rate_by_type,
     response_by_category,
@@ -286,7 +295,7 @@ export function useComplaintsData(
           id, complaint_number, complaint_date, status, resolution, resolved_at, created_at,
           companies:company_id(id, name),
           branches:branch_id(id, name),
-          product_groups:product_group_id(id, name),
+          product_groups:product_group_id(id, name, code),
           categories:category_id(id, name),
           problem_types:problem_type_id(id, name),
           problem_sub_types:problem_sub_type_id(id, name),
