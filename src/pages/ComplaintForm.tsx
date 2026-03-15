@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff } from "lucide-react";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
@@ -11,6 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -59,6 +64,8 @@ export default function ComplaintForm() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [recentComplaints, setRecentComplaints] = useState<any[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [listeningField, setListeningField] = useState<"description" | "resolution" | null>(null);
@@ -169,6 +176,39 @@ export default function ComplaintForm() {
     }
   }
 
+  async function handleEditRecent(id: string) {
+    const { data, error } = await supabase.from("complaints").select("*").eq("id", id).single();
+    if (error || !data) { toast.error("โหลดข้อมูลไม่สำเร็จ"); return; }
+    setForm({
+      complaint_number: data.complaint_number ?? "",
+      complaint_date: data.complaint_date ?? "",
+      company_id: data.company_id ?? "",
+      branch_id: data.branch_id ?? "",
+      product_group_id: data.product_group_id ?? "",
+      category_id: data.category_id ?? "",
+      problem_type_id: data.problem_type_id ?? "",
+      problem_sub_type_id: data.problem_sub_type_id ?? "",
+      caller_id: data.caller_id ?? "",
+      description: data.description ?? "",
+      status: data.status ?? "",
+      priority: data.priority ?? "",
+      resolution: data.resolution ?? "",
+      resolved_at: data.resolved_at ?? "",
+    });
+    setEditingId(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirmId) return;
+    const { error } = await supabase.from("complaints").delete().eq("id", deleteConfirmId);
+    setDeleteConfirmId(null);
+    if (error) { toast.error(`ลบไม่สำเร็จ: ${error.message}`); return; }
+    toast.success("ลบข้อร้องเรียนสำเร็จ");
+    if (editingId === deleteConfirmId) { setForm(INITIAL_FORM); setEditingId(null); }
+    fetchRecent();
+  }
+
   const filteredBranches = form.company_id
     ? lookup.branches.filter(b => b.company_id === form.company_id) : lookup.branches;
   const filteredCategories = lookup.categories;
@@ -199,9 +239,15 @@ export default function ComplaintForm() {
       if (form.problem_sub_type_id) payload.problem_sub_type_id = form.problem_sub_type_id;
       if (form.caller_id) payload.caller_id = form.caller_id;
 
-      const { error } = await supabase.from("complaints").insert(payload as any);
+      let error;
+      if (editingId) {
+        ({ error } = await supabase.from("complaints").update(payload as any).eq("id", editingId));
+        if (!error) { toast.success("แก้ไขข้อร้องเรียนสำเร็จ"); setEditingId(null); }
+      } else {
+        ({ error } = await supabase.from("complaints").insert(payload as any));
+        if (!error) toast.success("บันทึกข้อร้องเรียนสำเร็จ");
+      }
       if (error) throw error;
-      toast.success("บันทึกข้อร้องเรียนสำเร็จ");
       setForm(INITIAL_FORM);
       fetchRecent();
     } catch (err: any) {
@@ -231,14 +277,21 @@ export default function ComplaintForm() {
           {/* Form */}
           <div className="lg:col-span-2">
             <div className="glass-card relative p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(210 100% 60%), hsl(270 80% 65%))" }}>
-                  <Plus className="h-4 w-4 text-white" />
+              <div className="flex items-center justify-between gap-2 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: editingId ? "linear-gradient(135deg, hsl(38 92% 50%), hsl(25 95% 55%))" : "linear-gradient(135deg, hsl(210 100% 60%), hsl(270 80% 65%))" }}>
+                    {editingId ? <Pencil className="h-4 w-4 text-white" /> : <Plus className="h-4 w-4 text-white" />}
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground">{editingId ? "แก้ไขข้อร้องเรียน" : "ข้อมูลข้อร้องเรียน"}</h2>
+                    <p className="text-xs text-muted-foreground">{editingId ? "แก้ไขรายละเอียด Complaint" : "กรอกรายละเอียดเพื่อบันทึก Complaint ใหม่"}</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">ข้อมูลข้อร้องเรียน</h2>
-                  <p className="text-xs text-muted-foreground">กรอกรายละเอียดเพื่อบันทึก Complaint ใหม่</p>
-                </div>
+                {editingId && (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" onClick={() => { setForm(INITIAL_FORM); setEditingId(null); }}>
+                    <X className="h-4 w-4" /> ยกเลิกแก้ไข
+                  </Button>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -454,6 +507,8 @@ export default function ComplaintForm() {
                 <Button type="submit" disabled={saving} size="lg" className="w-full rounded-xl">
                   {saving ? (
                     <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</span>
+                  ) : editingId ? (
+                    <span className="flex items-center gap-2"><Save className="h-4 w-4" /> บันทึกการแก้ไข</span>
                   ) : (
                     <span className="flex items-center gap-2"><Save className="h-4 w-4" /> บันทึกข้อร้องเรียน</span>
                   )}
@@ -474,12 +529,30 @@ export default function ComplaintForm() {
                   <p className="text-xs text-muted-foreground">ยังไม่มีข้อมูล</p>
                 ) : (
                   recentComplaints.map((c: any) => (
-                    <div key={c.id} className="p-3 rounded-xl bg-secondary/30 border border-border/50 space-y-1.5 transition-colors hover:bg-secondary/50">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">{c.complaint_number}</span>
-                        <Badge variant={c.status === "ปิดผู้ผลิต" ? "default" : "secondary"} className="text-[10px]">
-                          {c.status}
-                        </Badge>
+                    <div key={c.id} className={`p-3 rounded-xl border border-border/50 space-y-1.5 transition-colors ${editingId === c.id ? 'bg-amber-500/10 border-amber-500/40' : 'bg-secondary/30 hover:bg-secondary/50'}`}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-sm font-medium text-foreground truncate">{c.complaint_number}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge variant={c.status === "ปิดผู้ผลิต" ? "default" : "secondary"} className="text-[10px]">
+                            {c.status || '-'}
+                          </Badge>
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditRecent(c.id)}
+                            title="แก้ไข"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeleteConfirmId(c.id)}
+                            title="ลบ"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {c.complaint_date ? new Date(c.complaint_date).toLocaleDateString("th-TH") : "-"}
@@ -496,6 +569,24 @@ export default function ComplaintForm() {
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการลบข้อร้องเรียนนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ลบ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
