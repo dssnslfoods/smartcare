@@ -219,7 +219,23 @@ export default function ComplaintForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.complaint_number) { toast.error("กรุณากรอกเลขที่เอกสาร"); return; }
+    const required: [string, string][] = [
+      [form.complaint_number, "เลขที่เอกสาร"],
+      [form.complaint_date, "วันที่"],
+      [form.company_id, "บริษัท"],
+      [form.product_group_id, "กลุ่มสินค้า"],
+      [form.category_id, "หมวดหมู่"],
+      [form.problem_type_id, "ประเภทปัญหา"],
+      [form.problem_sub_type_id, "ประเภทปัญหาย่อย"],
+      [form.caller_id, "ช่องทางการแจ้งปัญหา"],
+      [form.status, "สถานะ"],
+      [form.priority, "ความสำคัญ"],
+      [form.description, "รายละเอียด"],
+      [form.resolution, "การแก้ไข"],
+      [form.resolved_at, "วันที่แก้ไข"],
+    ];
+    const missing = required.filter(([v]) => !v).map(([, label]) => label);
+    if (missing.length > 0) { toast.error(`กรุณากรอกข้อมูลให้ครบ: ${missing.join(", ")}`); return; }
     setSaving(true);
     try {
       const payload: Record<string, any> = {
@@ -298,11 +314,11 @@ export default function ComplaintForm() {
                 {/* Row 1: Doc Number & Date */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="complaint_number" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">เลขที่เอกสาร *</Label>
+                    <Label htmlFor="complaint_number" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">เลขที่เอกสาร <span className="text-destructive">*</span></Label>
                     <Input id="complaint_number" placeholder="เช่น QAS.2.2025.09/001" value={form.complaint_number} onChange={e => setField("complaint_number", e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่ <span className="text-destructive">*</span></Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.complaint_date && "text-muted-foreground")}>
@@ -326,7 +342,7 @@ export default function ComplaintForm() {
                 {/* Row 2: Company & Branch */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">บริษัท</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">บริษัท <span className="text-destructive">*</span></Label>
                     <Select value={form.company_id || "_none"} onValueChange={v => setField("company_id", v === "_none" ? "" : v)}>
                       <SelectTrigger><SelectValue placeholder="เลือกบริษัท" /></SelectTrigger>
                       <SelectContent>
@@ -350,7 +366,7 @@ export default function ComplaintForm() {
                 {/* Row 3: Product Group & Category */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">กลุ่มสินค้า</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">กลุ่มสินค้า <span className="text-destructive">*</span></Label>
                     <Select value={form.product_group_id || "_none"} onValueChange={v => setField("product_group_id", v === "_none" ? "" : v)}>
                       <SelectTrigger><SelectValue placeholder="เลือกกลุ่มสินค้า" /></SelectTrigger>
                       <SelectContent>
@@ -360,7 +376,7 @@ export default function ComplaintForm() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">หมวดหมู่</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">หมวดหมู่ <span className="text-destructive">*</span></Label>
                     <Select value={form.category_id || "_none"} onValueChange={v => setField("category_id", v === "_none" ? "" : v)}>
                       <SelectTrigger><SelectValue placeholder="เลือกหมวดหมู่" /></SelectTrigger>
                       <SelectContent>
@@ -375,7 +391,7 @@ export default function ComplaintForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      ประเภทปัญหา
+                      ประเภทปัญหา <span className="text-destructive">*</span>
                       {!form.category_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกหมวดหมู่ก่อน)</span>}
                     </Label>
                     <Select
@@ -394,7 +410,7 @@ export default function ComplaintForm() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      ประเภทปัญหาย่อย
+                      ประเภทปัญหาย่อย <span className="text-destructive">*</span>
                       {!form.problem_type_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกประเภทปัญหาก่อน)</span>}
                     </Label>
                     <Select
@@ -416,7 +432,7 @@ export default function ComplaintForm() {
                 {/* Row 5: Caller, Status, Priority */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ช่องทางการแจ้งปัญหา</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ช่องทางการแจ้งปัญหา <span className="text-destructive">*</span></Label>
                     <Select value={form.caller_id || "_none"} onValueChange={v => setField("caller_id", v === "_none" ? "" : v)}>
                       <SelectTrigger><SelectValue placeholder="เลือกช่องทางการแจ้งปัญหา" /></SelectTrigger>
                       <SelectContent>
@@ -426,7 +442,7 @@ export default function ComplaintForm() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สถานะ</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สถานะ <span className="text-destructive">*</span></Label>
                     <Select value={form.status} onValueChange={v => setField("status", v)}>
                       <SelectTrigger><SelectValue placeholder="เลือกสถานะ" /></SelectTrigger>
                       <SelectContent>
@@ -435,7 +451,7 @@ export default function ComplaintForm() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ความสำคัญ</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ความสำคัญ <span className="text-destructive">*</span></Label>
                     <Select value={form.priority} onValueChange={v => setField("priority", v)}>
                       <SelectTrigger><SelectValue placeholder="เลือกความสำคัญ" /></SelectTrigger>
                       <SelectContent>
@@ -448,7 +464,7 @@ export default function ComplaintForm() {
                 {/* Description */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายละเอียด</Label>
+                    <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายละเอียด <span className="text-destructive">*</span></Label>
                     <Button
                       type="button"
                       size="sm"
@@ -476,7 +492,7 @@ export default function ComplaintForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข</Label>
+                      <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข <span className="text-destructive">*</span></Label>
                       <Button
                         type="button"
                         size="sm"
@@ -500,7 +516,7 @@ export default function ComplaintForm() {
                     <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={2} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข <span className="text-destructive">*</span></Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.resolved_at && "text-muted-foreground")}>
