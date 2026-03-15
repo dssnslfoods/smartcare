@@ -66,30 +66,35 @@ export default function ComplaintForm() {
 
   useEffect(() => {
     async function fetchLookups() {
-      const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities] =
-        await Promise.all([
-          supabase.from("companies").select("id, name").order("name"),
-          supabase.from("branches").select("id, name, company_id").order("name"),
-          supabase.from("product_groups").select("id, name").order("name"),
-          supabase.from("categories").select("id, name").order("name"),
-          supabase.from("problem_types").select("id, name, category_id").order("name"),
-          supabase.from("problem_sub_types").select("id, name, problem_type_id").order("name"),
-          supabase.from("callers").select("id, name").order("name"),
-          supabase.from("statuses").select("id, name, code").order("name"),
-          supabase.from("priorities").select("id, name, code").order("name"),
-        ]);
-      setLookup({
-        companies: companies.data || [],
-        branches: (branches.data || []) as any,
-        product_groups: productGroups.data || [],
-        categories: (categories.data || []) as any,
-        problem_types: problemTypes.data || [],
-        problem_sub_types: (problemSubTypes.data || []) as any,
-        callers: callers.data || [],
-        statuses: (statuses.data || []) as any,
-        priorities: (priorities.data || []) as any,
-      });
-      setLoading(false);
+      try {
+        const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities] =
+          await Promise.all([
+            supabase.from("companies").select("id, name").order("name"),
+            supabase.from("branches").select("id, name, company_id").order("name"),
+            supabase.from("product_groups").select("id, name").order("name"),
+            supabase.from("categories").select("id, name").order("name"),
+            supabase.from("problem_types").select("id, name, category_id").order("name"),
+            supabase.from("problem_sub_types").select("id, name, problem_type_id").order("name"),
+            supabase.from("callers").select("id, name").order("name"),
+            supabase.from("statuses").select("id, name, code").order("name"),
+            supabase.from("priorities").select("id, name, code").order("name"),
+          ]);
+        setLookup({
+          companies: companies.data || [],
+          branches: (branches.data || []) as any,
+          product_groups: productGroups.data || [],
+          categories: (categories.data || []) as any,
+          problem_types: problemTypes.data || [],
+          problem_sub_types: (problemSubTypes.data || []) as any,
+          callers: callers.data || [],
+          statuses: (statuses.data || []) as any,
+          priorities: (priorities.data || []) as any,
+        });
+      } catch (err) {
+        console.error("fetchLookups error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
 
     // Initialize speech recognition
@@ -166,6 +171,7 @@ export default function ComplaintForm() {
 
   const filteredBranches = form.company_id
     ? lookup.branches.filter(b => b.company_id === form.company_id) : lookup.branches;
+  const filteredCategories = lookup.categories;
   const filteredProblemTypes = form.category_id
     ? lookup.problem_types.filter(p => p.category_id === form.category_id) : lookup.problem_types;
   const filteredSubTypes = form.problem_type_id
