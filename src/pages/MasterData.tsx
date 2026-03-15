@@ -531,35 +531,34 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
     setSelectedIds(new Set());
     setEditingId(null);
     try {
-      let { data, error } = await (supabase
-        .from(config.tableName as any)
-        .select(config.fetchSelect) as any)
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (error) {
-        const retry = await (supabase
+      // Paginate to bypass Supabase 1000-row default cap
+      const PAGE = 1000;
+      let allData: any[] = [];
+      let fetchError: any = null;
+      let pg = 0;
+      while (true) {
+        let { data: chunk, error } = await (supabase
           .from(config.tableName as any)
-          .select('*') as any)
+          .select(config.fetchSelect) as any)
           .order('created_at', { ascending: false })
-          .limit(200);
-        data = retry.data;
-        error = retry.error;
+          .range(pg * PAGE, (pg + 1) * PAGE - 1);
+        if (error) {
+          const retry = await (supabase.from(config.tableName as any).select('*') as any)
+            .order('created_at', { ascending: false })
+            .range(pg * PAGE, (pg + 1) * PAGE - 1);
+          chunk = retry.data;
+          if (retry.error) { fetchError = retry.error; break; }
+        }
+        if (!chunk || chunk.length === 0) break;
+        allData = allData.concat(chunk);
+        if (chunk.length < PAGE) break;
+        pg++;
       }
 
-      if (error) {
-        const retry = await (supabase
-          .from(config.tableName as any)
-          .select('*') as any)
-          .limit(200);
-        data = retry.data;
-        error = retry.error;
-      }
-
-      if (error) {
-        toast({ title: 'เกิดข้อผิดพลาด', description: error.message, variant: 'destructive' });
+      if (fetchError) {
+        toast({ title: 'เกิดข้อผิดพลาด', description: fetchError.message, variant: 'destructive' });
       } else {
-        setRecords(data || []);
+        setRecords(allData);
       }
     } catch (e: any) {
       toast({ title: 'เกิดข้อผิดพลาด', description: e.message, variant: 'destructive' });

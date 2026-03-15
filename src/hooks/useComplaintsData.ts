@@ -313,7 +313,21 @@ export function useComplaintsData(
         query = query.lte("complaint_date", `${dateTo}T23:59:59`);
       }
 
-      const { data, error } = await query;
+      // Fetch all rows by paginating (Supabase default cap = 1000)
+      const PAGE = 1000;
+      let allData: any[] = [];
+      let page = 0;
+      let fetchError = null;
+      while (true) {
+        const { data: chunk, error: err } = await (query as any).range(page * PAGE, (page + 1) * PAGE - 1);
+        if (err) { fetchError = err; break; }
+        if (!chunk || chunk.length === 0) break;
+        allData = allData.concat(chunk);
+        if (chunk.length < PAGE) break;
+        page++;
+      }
+      const data = allData;
+      const error = fetchError;
 
       if (error) {
         console.error("Error fetching complaints:", error);
