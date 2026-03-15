@@ -374,9 +374,18 @@ export default function ComplaintForm() {
                 {/* Row 4: Problem Type & Sub Type */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ประเภทปัญหา</Label>
-                    <Select value={form.problem_type_id || "_none"} onValueChange={v => setField("problem_type_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกประเภทปัญหา" /></SelectTrigger>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      ประเภทปัญหา
+                      {!form.category_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกหมวดหมู่ก่อน)</span>}
+                    </Label>
+                    <Select
+                      value={form.problem_type_id || "_none"}
+                      onValueChange={v => setField("problem_type_id", v === "_none" ? "" : v)}
+                      disabled={!form.category_id}
+                    >
+                      <SelectTrigger className={!form.category_id ? "opacity-50 cursor-not-allowed" : ""}>
+                        <SelectValue placeholder="เลือกประเภทปัญหา" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_none">-- เลือกประเภทปัญหา --</SelectItem>
                         {filteredProblemTypes.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
@@ -384,9 +393,18 @@ export default function ComplaintForm() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ประเภทปัญหาย่อย</Label>
-                    <Select value={form.problem_sub_type_id || "_none"} onValueChange={v => setField("problem_sub_type_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกประเภทย่อย" /></SelectTrigger>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      ประเภทปัญหาย่อย
+                      {!form.problem_type_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกประเภทปัญหาก่อน)</span>}
+                    </Label>
+                    <Select
+                      value={form.problem_sub_type_id || "_none"}
+                      onValueChange={v => setField("problem_sub_type_id", v === "_none" ? "" : v)}
+                      disabled={!form.problem_type_id}
+                    >
+                      <SelectTrigger className={!form.problem_type_id ? "opacity-50 cursor-not-allowed" : ""}>
+                        <SelectValue placeholder="เลือกประเภทย่อย" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_none">-- เลือกประเภทย่อย --</SelectItem>
                         {filteredSubTypes.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
