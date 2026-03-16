@@ -58,13 +58,23 @@ function diffDays(d1: string | null, d2: string | null): number | null {
   return Math.abs(b - a) / (1000 * 60 * 60 * 24);
 }
 
-export default function MapTab() {
+interface MapTabProps {
+  companyId?: string;
+  branchId?: string;
+  status?: string;
+  category?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export default function MapTab({ companyId, branchId, status, category, dateFrom, dateTo }: MapTabProps) {
   const [cdcStats, setCdcStats] = useState<CDCStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalComplaints, setTotalComplaints] = useState(0);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   useEffect(() => {
+    setHoveredId(null);
     async function load() {
       const { data: groups } = await supabase
         .from("product_groups")
@@ -75,24 +85,39 @@ export default function MapTab() {
 
       const cdcIds = groups.map(g => g.id);
 
-      // Fetch complaints with details for CDC groups
+      // Fetch complaints with details for CDC groups, applying filters
       const PAGE = 1000;
       let allComplaints: any[] = [];
       let page = 0;
       while (true) {
-        const { data: chunk } = await supabase
+        let q = supabase
           .from("complaints")
           .select("product_group_id, complaint_date, resolved_at, status, priority, problem_types:problem_type_id(name)")
-          .in("product_group_id", cdcIds)
-          .range(page * PAGE, (page + 1) * PAGE - 1);
+          .in("product_group_id", cdcIds);
+
+        if (companyId && companyId !== "ALL") q = q.eq("company_id", companyId);
+        if (branchId && branchId !== "ALL") q = q.eq("branch_id", branchId);
+        if (status && status !== "ALL") q = q.eq("status", status);
+        if (category && category !== "ALL") q = q.eq("category_id", category);
+        if (dateFrom) q = q.gte("complaint_date", dateFrom);
+        if (dateTo) q = q.lte("complaint_date", dateTo);
+
+        const { data: chunk } = await q.range(page * PAGE, (page + 1) * PAGE - 1);
         if (!chunk?.length) break;
         allComplaints = allComplaints.concat(chunk);
         if (chunk.length < PAGE) break;
         page++;
       }
 
-      // Also get total complaints count
-      const { count } = await supabase.from("complaints").select("id", { count: "exact", head: true });
+      // Total complaints count (with same filters, not CDC-restricted)
+      let totalQ = supabase.from("complaints").select("id", { count: "exact", head: true });
+      if (companyId && companyId !== "ALL") totalQ = totalQ.eq("company_id", companyId);
+      if (branchId && branchId !== "ALL") totalQ = totalQ.eq("branch_id", branchId);
+      if (status && status !== "ALL") totalQ = totalQ.eq("status", status);
+      if (category && category !== "ALL") totalQ = totalQ.eq("category_id", category);
+      if (dateFrom) totalQ = totalQ.gte("complaint_date", dateFrom);
+      if (dateTo) totalQ = totalQ.lte("complaint_date", dateTo);
+      const { count } = await totalQ;
       setTotalComplaints(count || 0);
 
       // Build per-CDC stats
@@ -157,7 +182,7 @@ export default function MapTab() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [companyId, branchId, status, category, dateFrom, dateTo]);
 
   const maxCount = useMemo(() => Math.max(...cdcStats.map(p => p.count), 1), [cdcStats]);
   const highlightedProvinces = useMemo(() => new Set(cdcStats.map(p => p.province)), [cdcStats]);

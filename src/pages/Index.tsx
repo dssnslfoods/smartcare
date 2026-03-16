@@ -175,7 +175,16 @@ export default function Index() {
             {activeTab === "groups" && <GroupsTab data={data} />}
             {activeTab === "performance" && <PerformanceTab data={data} />}
             {activeTab === "deep" && <DeepAnalysisTab data={data} />}
-            {activeTab === "map" && <MapTab />}
+            {activeTab === "map" && (
+              <MapTab
+                companyId={companyId}
+                branchId={branchId}
+                status={status}
+                category={category}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+              />
+            )}
           </>
         )}
       </div>
