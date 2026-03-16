@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -11,6 +11,7 @@ import GroupsTab from "@/components/dashboard/GroupsTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
 import MapTab from "@/components/dashboard/MapTab";
+import TVMode from "@/components/dashboard/TVMode";
 import Footer from "@/components/Footer";
 
 const TABS = [
@@ -25,6 +26,7 @@ const TABS = [
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [tvMode, setTvMode] = useState(false);
   const [companyId, setCompanyId] = useState("ALL");
   const [branchId, setBranchId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
@@ -37,6 +39,11 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* TV Mode overlay */}
+      {tvMode && !loading && count > 0 && (
+        <TVMode data={data} count={count} onExit={() => setTvMode(false)} />
+      )}
+
       <TopNavBar />
 
       <div className="max-w-[1440px] mx-auto px-6 py-6">
@@ -51,6 +58,17 @@ export default function Index() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {!loading && count > 0 && (
+              <button
+                onClick={() => setTvMode(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40
+                  text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary/50
+                  hover:bg-primary/10 transition-all"
+                title="เปิด TV Mode"
+              >
+                <Tv className="w-3.5 h-3.5" /> TV Mode
+              </button>
+            )}
             {!loading && count > 0 && (
               <>
                 <span className="status-badge bg-primary/10 text-primary border border-primary/20">
