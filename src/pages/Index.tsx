@@ -64,7 +64,7 @@ export default function Index() {
                 </span>
                 {data.kpi.not_closed > 0 && (
                   <span className="status-badge status-badge-danger">
-                    ค้าง {data.kpi.not_closed} เคส
+                    ค้าง {data.kpi.not_closed.toLocaleString()} เคส
                   </span>
                 )}
               </>

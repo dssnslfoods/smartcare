@@ -55,20 +55,20 @@ export default function TrendsTab({ data }: Props) {
       {/* Quick summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="kpi-card text-center py-3">
-          <div className="text-lg font-bold text-emerald-400">{totalClosed}</div>
+          <div className="text-lg font-bold text-emerald-400">{totalClosed.toLocaleString()}</div>
           <div className="text-[11px] text-muted-foreground">ปิดผู้ผลิต</div>
         </div>
         <div className="kpi-card text-center py-3">
-          <div className="text-lg font-bold text-red-400">{totalOpen}</div>
+          <div className="text-lg font-bold text-red-400">{totalOpen.toLocaleString()}</div>
           <div className="text-[11px] text-muted-foreground">ไม่ปิดผู้ผลิต</div>
         </div>
         <div className="kpi-card text-center py-3">
-          <div className="text-lg font-bold text-amber-400">{totalRd}</div>
+          <div className="text-lg font-bold text-amber-400">{totalRd.toLocaleString()}</div>
           <div className="text-[11px] text-muted-foreground">ปิดเป็น RD</div>
         </div>
         <div className="kpi-card text-center py-3">
           <div className="text-lg font-bold text-sky-400">{peakMonth.name}</div>
-          <div className="text-[11px] text-muted-foreground">เดือนที่พบมากสุด ({peakMonth.total})</div>
+          <div className="text-[11px] text-muted-foreground">เดือนที่พบมากสุด ({peakMonth.total.toLocaleString()})</div>
         </div>
       </div>
 

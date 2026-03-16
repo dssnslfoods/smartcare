@@ -209,7 +209,7 @@ export default function MapTab() {
             <AlertTriangle className="h-3.5 w-3.5" /> เคสสำคัญ/วิกฤต
           </div>
           <div className="text-2xl font-bold text-amber-400">
-            {cdcStats.reduce((s, p) => s + p.criticalCount, 0)}
+            {cdcStats.reduce((s, p) => s + p.criticalCount, 0).toLocaleString()}
           </div>
           <div className="text-[10px] text-muted-foreground">รายการ</div>
         </div>
@@ -369,7 +369,7 @@ export default function MapTab() {
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <div className="text-lg font-bold text-primary">{hoveredPoint.count}</div>
+                    <div className="text-lg font-bold text-primary">{hoveredPoint.count.toLocaleString()}</div>
                     <div className="text-[10px] text-muted-foreground">Complaint</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-2 text-center">
@@ -397,7 +397,7 @@ export default function MapTab() {
                     {hoveredPoint.topProblems.map((p, i) => (
                       <div key={i} className="flex items-center justify-between text-xs mb-1">
                         <span className="text-foreground/80 truncate mr-2">{i + 1}. {p.name}</span>
-                        <span className="font-semibold text-foreground shrink-0">{p.count}</span>
+                        <span className="font-semibold text-foreground shrink-0">{p.count.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -439,7 +439,7 @@ export default function MapTab() {
                       <span className="text-xs font-bold text-primary/60 w-4">{idx + 1}</span>
                       <span className="text-sm font-semibold text-foreground">{pt.name}</span>
                     </div>
-                    <span className="text-sm font-bold text-foreground">{pt.count}</span>
+                    <span className="text-sm font-bold text-foreground">{pt.count.toLocaleString()}</span>
                   </div>
 
                   <div className="h-1.5 rounded-full bg-white/5 overflow-hidden mb-2">
@@ -474,7 +474,7 @@ export default function MapTab() {
                       {pt.topProblems.map((p, i) => (
                         <div key={i} className="flex items-center justify-between text-xs">
                           <span className="text-foreground/70 truncate mr-2">{p.name}</span>
-                          <span className="font-medium text-foreground shrink-0">{p.count}</span>
+                          <span className="font-medium text-foreground shrink-0">{p.count.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>

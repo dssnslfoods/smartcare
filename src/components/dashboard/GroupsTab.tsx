@@ -184,10 +184,10 @@ export default function GroupsTab({ data }: Props) {
                               fontWeight: ratio > 0.7 ? "700" : "400",
                               transition: "all 0.3s ease",
                               boxShadow: ratio > 0.8 ? "inset 0 0 10px rgba(0,0,0,0.2)" : "none"
-                            }}>{val}</td>
+                            }}>{val.toLocaleString()}</td>
                           );
                         })}
-                        <td className="font-bold text-white bg-slate-800/80">{rowTotal}</td>
+                        <td className="font-bold text-white bg-slate-800/80">{rowTotal.toLocaleString()}</td>
                       </tr>
                     );
                   })}

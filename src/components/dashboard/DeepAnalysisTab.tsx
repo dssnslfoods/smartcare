@@ -65,7 +65,7 @@ export default function DeepAnalysisTab({ data }: Props) {
             <p>
               เพียง <strong className="text-foreground">{items80}</strong> จาก {spEntries.length} ประเภทย่อย ครอบคลุม 80% ของ Complaint ทั้งหมด
               {top3.length >= 3 && (
-                <> Top 3: <strong className="text-foreground">{top3[0][0]}</strong> ({top3[0][1]}), <strong className="text-foreground">{top3[1][0]}</strong> ({top3[1][1]}), <strong className="text-foreground">{top3[2][0]}</strong> ({top3[2][1]}) รวม {top3Pct}%</>
+                <> Top 3: <strong className="text-foreground">{top3[0][0]}</strong> ({top3[0][1].toLocaleString()}), <strong className="text-foreground">{top3[1][0]}</strong> ({top3[1][1].toLocaleString()}), <strong className="text-foreground">{top3[2][0]}</strong> ({top3[2][1].toLocaleString()}) รวม {top3Pct}%</>
               )}
             </p>
           </div>
@@ -83,7 +83,7 @@ export default function DeepAnalysisTab({ data }: Props) {
                 const risk = rate < 30 ? "สูง" : rate < 60 ? "กลาง" : "ต่ำ";
                 return (
                   <span key={p[0]}>
-                    <span className={`${color} font-semibold`}>ความเสี่ยง{risk}:</span> {p[0]} ({p[1]} เคส, ปิด {rate}%)
+                    <span className={`${color} font-semibold`}>ความเสี่ยง{risk}:</span> {p[0]} ({p[1].toLocaleString()} เคส, ปิด {rate}%)
                     {i < 2 && <br />}
                   </span>
                 );
@@ -98,7 +98,7 @@ export default function DeepAnalysisTab({ data }: Props) {
             </div>
             <p>
               {worstClose && (
-                <>หมวด <strong className="text-red-400">{worstClose[0]}</strong> ปิดเคสได้ต่ำสุดเพียง {worstClose[1].rate}% ({worstClose[1].closed}/{worstClose[1].total} เคส)</>
+                <>หมวด <strong className="text-red-400">{worstClose[0]}</strong> ปิดเคสได้ต่ำสุดเพียง {worstClose[1].rate}% ({worstClose[1].closed.toLocaleString()}/{worstClose[1].total.toLocaleString()} เคส)</>
               )}
               {bestClose && worstClose && bestClose !== worstClose && (
                 <><br />ส่วน <strong className="text-emerald-400">{bestClose[0]}</strong> มีประสิทธิภาพสูงสุด {bestClose[1].rate}%</>

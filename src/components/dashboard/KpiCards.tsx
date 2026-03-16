@@ -29,7 +29,7 @@ function AnimatedNumber({ value, suffix = "", decimals = 0 }: { value: number; s
     requestAnimationFrame(animate);
   }, [value]);
 
-  return <>{decimals > 0 ? display.toFixed(decimals) : Math.round(display)}{suffix}</>;
+  return <>{decimals > 0 ? display.toFixed(decimals) : Math.round(display).toLocaleString()}{suffix}</>;
 }
 
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
@@ -74,7 +74,7 @@ export default function KpiCards({ data, categoryGroups }: Props) {
             <div className={`w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center text-xs font-bold ${CATEGORY_ICONS[name] || "bg-slate-500/20 text-slate-400"}`}>
               {count}
             </div>
-            <div className="kpi-value text-xl">{count}</div>
+            <div className="kpi-value text-xl">{count.toLocaleString()}</div>
             <div className="kpi-label text-[11px] leading-tight">{name}</div>
           </div>
         ))}
@@ -95,7 +95,7 @@ export default function KpiCards({ data, categoryGroups }: Props) {
           </div>
           <div className="kpi-label">จำนวน Complaint ทั้งหมด</div>
           <div className="text-[11px] text-cyan-400/70 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> {kpi.total_records} records
+            <TrendingUp className="w-3 h-3" /> {kpi.total_records.toLocaleString()} records
           </div>
         </div>
 

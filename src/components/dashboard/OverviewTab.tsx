@@ -171,9 +171,9 @@ export default function OverviewTab({ data }: Props) {
             <p>
               {top1Prob
                 ? <>
-                    <strong className="text-foreground">{top1Prob[0]}</strong> ({top1Prob[1]} รายการ, {Math.round((top1Prob[1] / totalRecords) * 100)}%)
-                    {top2Prob && <> และ <strong className="text-foreground">{top2Prob[0]}</strong> ({top2Prob[1]} รายการ)</>}
-                    {top1Sub && <> โดยเฉพาะ &quot;{top1Sub[0]}&quot; ({top1Sub[1]} ครั้ง)</>}
+                    <strong className="text-foreground">{top1Prob[0]}</strong> ({top1Prob[1].toLocaleString()} รายการ, {Math.round((top1Prob[1] / totalRecords) * 100)}%)
+                    {top2Prob && <> และ <strong className="text-foreground">{top2Prob[0]}</strong> ({top2Prob[1].toLocaleString()} รายการ)</>}
+                    {top1Sub && <> โดยเฉพาะ &quot;{top1Sub[0]}&quot; ({top1Sub[1].toLocaleString()} ครั้ง)</>}
                   </>
                 : "ยังไม่มีข้อมูลเพียงพอ"
               }
@@ -209,7 +209,7 @@ export default function OverviewTab({ data }: Props) {
             <p>
               {topGroup
                 ? <>
-                    <strong className="text-foreground">{topGroup[0]}</strong> พบ {topGroup[1]} รายการ ({Math.round((topGroup[1] / totalRecords) * 100)}%) ควรปรับปรุงมาตรฐานคุณภาพ
+                    <strong className="text-foreground">{topGroup[0]}</strong> พบ {topGroup[1].toLocaleString()} รายการ ({Math.round((topGroup[1] / totalRecords) * 100)}%) ควรปรับปรุงมาตรฐานคุณภาพ
                   </>
                 : "ไม่พบความผิดปกติที่กระจุกตัว"
               }

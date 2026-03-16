@@ -48,7 +48,7 @@ export default function ProblemsTab({ data }: Props) {
               </span>
               <span className="text-[11px] text-muted-foreground truncate">{d.name}</span>
             </div>
-            <div className="text-xl font-bold text-foreground">{d.value}</div>
+            <div className="text-xl font-bold text-foreground">{d.value.toLocaleString()}</div>
             <div className="text-[10px] text-muted-foreground">{Math.round((d.value / totalProblems) * 100)}% ของทั้งหมด</div>
           </div>
         ))}
