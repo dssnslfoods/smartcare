@@ -80,16 +80,16 @@ export default function ComplaintList() {
   // Filter options
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     async function fetchOptions() {
       const [compRes, catRes] = await Promise.all([
         supabase.from("companies").select("id, name"),
-        supabase.from("categories").select("name"),
+        supabase.from("categories").select("id, name").order("name"),
       ]);
       setCompanies(compRes.data || []);
-      setCategories([...new Set((catRes.data || []).map(c => c.name).filter(Boolean))]);
+      setCategories((catRes.data || []).filter(c => c.name));
 
       const { data: statusData } = await supabase.from("complaints").select("status");
       setStatuses([...new Set((statusData || []).map(c => c.status).filter(Boolean) as string[])]);
@@ -193,7 +193,7 @@ export default function ComplaintList() {
                 <SelectTrigger><SelectValue placeholder="หมวดหมู่" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">ทุกหมวดหมู่</SelectItem>
-                  {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
