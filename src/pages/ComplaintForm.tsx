@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface LookupItem { id: string; name: string; }
@@ -58,6 +59,8 @@ const DEFAULT_PRIORITIES = [
 ];
 
 export default function ComplaintForm() {
+  const { role, userProfile } = useAuth();
+  const isStaff = role === "staff";
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(INITIAL_FORM);
   const [lookup, setLookup] = useState<LookupData>({
@@ -88,9 +91,21 @@ export default function ComplaintForm() {
             supabase.from("statuses").select("id, name, code").order("name"),
             supabase.from("priorities").select("id, name, code").order("name"),
           ]);
+        let companyList = companies.data || [];
+        let branchList = (branches.data || []) as (LookupItem & { company_id: string })[];
+
+        // Staff can only see their own company/branch
+        if (isStaff && userProfile?.company_id) {
+          companyList = companyList.filter(c => c.id === userProfile.company_id);
+          branchList = branchList.filter(b => b.company_id === userProfile.company_id);
+          if (userProfile.branch_id) {
+            branchList = branchList.filter(b => b.id === userProfile.branch_id);
+          }
+        }
+
         setLookup({
-          companies: companies.data || [],
-          branches: (branches.data || []) as any,
+          companies: companyList,
+          branches: branchList,
           product_groups: productGroups.data || [],
           categories: (categories.data || []) as any,
           problem_types: problemTypes.data || [],
@@ -99,6 +114,15 @@ export default function ComplaintForm() {
           statuses: (statuses.data || []) as any,
           priorities: (priorities.data || []) as any,
         });
+
+        // Auto-set company/branch for staff
+        if (isStaff && userProfile?.company_id) {
+          setForm(prev => ({
+            ...prev,
+            company_id: prev.company_id || userProfile.company_id!,
+            branch_id: prev.branch_id || userProfile.branch_id || "",
+          }));
+        }
       } catch (err) {
         console.error("fetchLookups error:", err);
       } finally {
@@ -349,7 +373,7 @@ export default function ComplaintForm() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">บริษัท <span className="text-destructive">*</span></Label>
-                        <Select value={form.company_id || "_none"} onValueChange={v => setField("company_id", v === "_none" ? "" : v)}>
+                        <Select value={form.company_id || "_none"} onValueChange={v => setField("company_id", v === "_none" ? "" : v)} disabled={isStaff}>
                           <SelectTrigger><SelectValue placeholder="เลือกบริษัท" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-- เลือกบริษัท --</SelectItem>
@@ -359,7 +383,7 @@ export default function ComplaintForm() {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สาขา</Label>
-                        <Select value={form.branch_id || "_none"} onValueChange={v => setField("branch_id", v === "_none" ? "" : v)} disabled={!!form.company_id && filteredBranches.length === 0}>
+                        <Select value={form.branch_id || "_none"} onValueChange={v => setField("branch_id", v === "_none" ? "" : v)} disabled={isStaff || (!!form.company_id && filteredBranches.length === 0)}>
                           <SelectTrigger><SelectValue placeholder={form.company_id && filteredBranches.length === 0 ? "ไม่มีสาขาสำหรับบริษัทนี้" : "เลือกสาขา"} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-- เลือกสาขา --</SelectItem>

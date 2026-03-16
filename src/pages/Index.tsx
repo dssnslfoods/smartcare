@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
@@ -12,6 +12,7 @@ import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
 import MapTab from "@/components/dashboard/MapTab";
 import TVMode from "@/components/dashboard/TVMode";
+import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 
 const TABS = [
@@ -25,6 +26,9 @@ const TABS = [
 ];
 
 export default function Index() {
+  const { role, userProfile } = useAuth();
+  const isStaff = role === "staff";
+
   const [activeTab, setActiveTab] = useState("overview");
   const [tvMode, setTvMode] = useState(false);
   const [companyId, setCompanyId] = useState("ALL");
@@ -35,6 +39,14 @@ export default function Index() {
   const [dateTo, setDateTo] = useState("");
 
   const { options, loading: optionsLoading } = useFilterOptions();
+
+  // Auto-filter for staff
+  useEffect(() => {
+    if (isStaff && userProfile?.company_id) {
+      setCompanyId(userProfile.company_id);
+      if (userProfile.branch_id) setBranchId(userProfile.branch_id);
+    }
+  }, [isStaff, userProfile]);
   const { data, loading, count } = useComplaintsData(companyId, branchId, status, category, dateFrom, dateTo);
 
   return (
@@ -113,6 +125,8 @@ export default function Index() {
           onCategoryChange={setCategory}
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
+          companyDisabled={isStaff}
+          branchDisabled={isStaff}
         />
 
         {/* Navigation Tabs */}

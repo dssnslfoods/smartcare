@@ -1,14 +1,14 @@
 import { Navigate } from "react-router-dom";
-import { useAuth, AppRole } from "@/contexts/AuthContext";
+import { useAuth, Resource } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
 interface Props {
   children: React.ReactNode;
-  allowedRoles?: AppRole[];
+  resource?: Resource;
 }
 
-export default function ProtectedRoute({ children, allowedRoles }: Props) {
-  const { session, role, loading } = useAuth();
+export default function ProtectedRoute({ children, resource }: Props) {
+  const { session, hasPermission, loading } = useAuth();
 
   if (loading) {
     return (
@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children, allowedRoles }: Props) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
+  if (resource && !hasPermission(resource)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-2">

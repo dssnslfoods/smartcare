@@ -12,6 +12,7 @@ import ComplaintList from "./pages/ComplaintList.tsx";
 import Login from "./pages/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import UserManagement from "./pages/UserManagement.tsx";
+import RolePermissions from "./pages/RolePermissions.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,11 +25,12 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/master-data" element={<ProtectedRoute allowedRoles={["admin"]}><MasterData /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute allowedRoles={["admin"]}><UserManagement /></ProtectedRoute>} />
-            <Route path="/complaints" element={<ProtectedRoute><ComplaintList /></ProtectedRoute>} />
-            <Route path="/complaints/new" element={<ProtectedRoute><ComplaintForm /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute resource="dashboard"><Index /></ProtectedRoute>} />
+            <Route path="/master-data" element={<ProtectedRoute resource="master_data"><MasterData /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute resource="user_management"><UserManagement /></ProtectedRoute>} />
+            <Route path="/permissions" element={<ProtectedRoute resource="role_permissions"><RolePermissions /></ProtectedRoute>} />
+            <Route path="/complaints" element={<ProtectedRoute resource="complaint_list"><ComplaintList /></ProtectedRoute>} />
+            <Route path="/complaints/new" element={<ProtectedRoute resource="complaint_form"><ComplaintForm /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

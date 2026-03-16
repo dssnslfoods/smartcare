@@ -1,14 +1,38 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "admin" | "supervisor" | "executive" | "staff";
 
+export type Resource =
+  | "dashboard"
+  | "complaint_list"
+  | "complaint_form"
+  | "master_data"
+  | "user_management"
+  | "role_permissions";
+
+export interface UserProfile {
+  company_id: string | null;
+  branch_id: string | null;
+  full_name: string | null;
+  department: string | null;
+}
+
+interface RolePermission {
+  resource: Resource;
+  can_access: boolean;
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
+  userProfile: UserProfile | null;
+  permissions: RolePermission[];
   loading: boolean;
+  hasPermission: (resource: Resource) => boolean;
+  refreshPermissions: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
@@ -19,26 +43,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [permissions, setPermissions] = useState<RolePermission[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchRole(userId: string) {
+  async function fetchRoleAndProfile(userId: string) {
     try {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role")
+        .select("role, company_id, branch_id, full_name, department")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) {
         console.warn("Failed to fetch role:", error.message);
         setRole(null);
-        return;
+        setUserProfile(null);
+        return null;
       }
-      setRole((data?.role as AppRole) || null);
+      const fetchedRole = (data?.role as AppRole) || null;
+      setRole(fetchedRole);
+      setUserProfile(data ? {
+        company_id: data.company_id,
+        branch_id: data.branch_id,
+        full_name: data.full_name,
+        department: data.department,
+      } : null);
+      return fetchedRole;
     } catch (err) {
-      console.warn("fetchRole error:", err);
+      console.warn("fetchRoleAndProfile error:", err);
       setRole(null);
+      setUserProfile(null);
+      return null;
     }
   }
+
+  async function fetchPermissions(currentRole: AppRole) {
+    try {
+      const { data, error } = await supabase
+        .from("role_permissions")
+        .select("resource, can_access")
+        .eq("role", currentRole);
+      if (error) {
+        console.warn("Failed to fetch permissions:", error.message);
+        setPermissions([]);
+        return;
+      }
+      setPermissions((data || []) as RolePermission[]);
+    } catch (err) {
+      console.warn("fetchPermissions error:", err);
+      setPermissions([]);
+    }
+  }
+
+  async function initUser(userId: string) {
+    const fetchedRole = await fetchRoleAndProfile(userId);
+    if (fetchedRole) {
+      await fetchPermissions(fetchedRole);
+    }
+  }
+
+  const refreshPermissions = useCallback(async () => {
+    if (role) {
+      await fetchPermissions(role);
+    }
+  }, [role]);
+
+  const hasPermission = useCallback((resource: Resource): boolean => {
+    if (role === "admin") return true;
+    return permissions.some(p => p.resource === resource && p.can_access);
+  }, [role, permissions]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -46,10 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Don't await inside onAuthStateChange to avoid deadlocks
-          fetchRole(session.user.id).finally(() => setLoading(false));
+          initUser(session.user.id).finally(() => setLoading(false));
         } else {
           setRole(null);
+          setUserProfile(null);
+          setPermissions([]);
           setLoading(false);
         }
       }
@@ -59,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchRole(session.user.id);
+        await initUser(session.user.id);
       }
       setLoading(false);
     });
@@ -77,10 +151,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setUser(null);
     setRole(null);
+    setUserProfile(null);
+    setPermissions([]);
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, role, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{
+      session, user, role, userProfile, permissions, loading,
+      hasPermission, refreshPermissions, signIn, signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,6 +24,8 @@ interface FilterBarProps {
   onCategoryChange: (v: string) => void;
   onDateFromChange: (v: string) => void;
   onDateToChange: (v: string) => void;
+  companyDisabled?: boolean;
+  branchDisabled?: boolean;
 }
 
 function DatePicker({
@@ -77,7 +79,8 @@ export default function FilterBar({
   companies, branches, statuses, categories,
   companyId, branchId, status, category, dateFrom, dateTo,
   onCompanyChange, onBranchChange, onStatusChange, onCategoryChange,
-  onDateFromChange, onDateToChange
+  onDateFromChange, onDateToChange,
+  companyDisabled, branchDisabled,
 }: FilterBarProps) {
   return (
     <div className="glass rounded-2xl p-4 mb-6">
@@ -89,7 +92,7 @@ export default function FilterBar({
 
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">บริษัท</label>
-          <select className="filter-select" value={companyId} onChange={e => onCompanyChange(e.target.value)}>
+          <select className="filter-select" value={companyId} onChange={e => onCompanyChange(e.target.value)} disabled={companyDisabled}>
             <option value="ALL">ทั้งหมด</option>
             {(companies || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -97,7 +100,7 @@ export default function FilterBar({
 
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">สาขา</label>
-          <select className="filter-select" value={branchId} onChange={e => onBranchChange(e.target.value)}>
+          <select className="filter-select" value={branchId} onChange={e => onBranchChange(e.target.value)} disabled={branchDisabled}>
             <option value="ALL">ทั้งหมด</option>
             {(branches || []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>

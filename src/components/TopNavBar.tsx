@@ -1,17 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, List, ClipboardPlus, Database, LogOut, Users } from "lucide-react";
+import { BarChart3, List, ClipboardPlus, Database, LogOut, Users, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/logo.png";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, Resource } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const NAV_ITEMS = [
-  { path: "/", label: "Dashboard", icon: BarChart3 },
-  { path: "/complaints", label: "รายการ Complaint", icon: List },
-  { path: "/complaints/new", label: "บันทึกใหม่", icon: ClipboardPlus },
-  { path: "/master-data", label: "Master Data", icon: Database, roles: ["admin"] as string[] },
-  { path: "/users", label: "จัดการผู้ใช้", icon: Users, roles: ["admin"] as string[] },
+const NAV_ITEMS: { path: string; label: string; icon: any; resource?: Resource }[] = [
+  { path: "/", label: "Dashboard", icon: BarChart3, resource: "dashboard" },
+  { path: "/complaints", label: "รายการ Complaint", icon: List, resource: "complaint_list" },
+  { path: "/complaints/new", label: "บันทึกใหม่", icon: ClipboardPlus, resource: "complaint_form" },
+  { path: "/master-data", label: "Master Data", icon: Database, resource: "master_data" },
+  { path: "/users", label: "จัดการผู้ใช้", icon: Users, resource: "user_management" },
+  { path: "/permissions", label: "กำหนดสิทธิ์", icon: ShieldCheck, resource: "role_permissions" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -23,11 +24,11 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function TopNavBar() {
   const location = useLocation();
-  const { user, role, signOut } = useAuth();
+  const { user, role, hasPermission, signOut } = useAuth();
 
   const visibleItems = NAV_ITEMS.filter(item => {
-    if (!item.roles) return true;
-    return role && item.roles.includes(role);
+    if (!item.resource) return true;
+    return hasPermission(item.resource);
   });
 
   return (

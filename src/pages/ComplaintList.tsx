@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 
 interface ComplaintRow {
@@ -63,6 +64,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ComplaintList() {
+  const { role, userProfile } = useAuth();
+  const isStaff = role === "staff";
+
   const [complaints, setComplaints] = useState<ComplaintRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -96,6 +100,13 @@ export default function ComplaintList() {
     }
     fetchOptions();
   }, []);
+
+  // Auto-filter for staff
+  useEffect(() => {
+    if (isStaff && userProfile?.company_id) {
+      setCompanyFilter(userProfile.company_id);
+    }
+  }, [isStaff, userProfile]);
 
   useEffect(() => {
     async function fetchData() {
@@ -175,7 +186,7 @@ export default function ComplaintList() {
                   className="pl-9"
                 />
               </div>
-              <Select value={companyFilter} onValueChange={setCompanyFilter}>
+              <Select value={companyFilter} onValueChange={setCompanyFilter} disabled={isStaff}>
                 <SelectTrigger><SelectValue placeholder="บริษัท" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">ทุกบริษัท</SelectItem>
