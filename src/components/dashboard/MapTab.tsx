@@ -287,29 +287,13 @@ export default function MapTab() {
                   ));
                 })()}
 
-                {/* Outer glow ring for CDC markers */}
-                {cdcStats.map(pt => {
+                {/* Render non-hovered markers first, hovered marker last (SVG paint order = z-index) */}
+                {[...cdcStats.filter(p => p.id !== hoveredId), ...cdcStats.filter(p => p.id === hoveredId)].map(pt => {
                   const ratio = pt.count / maxCount;
-                  const r = 10 + ratio * 18;
+                  const baseR = 10 + ratio * 18;
                   const isHov = hoveredId === pt.id;
-                  return (
-                    <Marker key={`glow-${pt.id}`} coordinates={pt.coordinates}>
-                      <circle
-                        r={r + 4}
-                        fill="none"
-                        stroke={isHov ? "rgba(251,191,36,0.4)" : "rgba(14,165,233,0.25)"}
-                        strokeWidth={2}
-                        style={{ transition: "all 0.3s", pointerEvents: "none" }}
-                      />
-                    </Marker>
-                  );
-                })}
-
-                {/* Main bubble markers */}
-                {cdcStats.map(pt => {
-                  const ratio = pt.count / maxCount;
-                  const r = 10 + ratio * 18;
-                  const isHov = hoveredId === pt.id;
+                  const r = isHov ? baseR + 8 : baseR;
+                  const dimmed = hoveredId !== null && !isHov;
                   return (
                     <Marker
                       key={pt.id}
@@ -317,38 +301,64 @@ export default function MapTab() {
                       onMouseEnter={() => setHoveredId(pt.id)}
                       onMouseLeave={() => setHoveredId(null)}
                     >
+                      {/* Outer pulse ring — only on hovered */}
+                      {isHov && (
+                        <circle
+                          r={r + 10}
+                          fill="none"
+                          stroke="rgba(251,191,36,0.35)"
+                          strokeWidth={2}
+                          style={{ pointerEvents: "none" }}
+                        />
+                      )}
+                      {/* Glow ring */}
+                      <circle
+                        r={r + 4}
+                        fill="none"
+                        stroke={isHov ? "rgba(251,191,36,0.55)" : "rgba(14,165,233,0.2)"}
+                        strokeWidth={isHov ? 2.5 : 1.5}
+                        opacity={dimmed ? 0.3 : 1}
+                        style={{ pointerEvents: "none", transition: "all 0.25s" }}
+                      />
+                      {/* Main bubble */}
                       <circle
                         r={r}
                         fill={isHov
-                          ? "rgba(251,191,36,0.9)"
+                          ? "rgba(251,191,36,0.95)"
                           : `rgba(14,165,233,${0.5 + ratio * 0.4})`
                         }
                         stroke={isHov ? "#fbbf24" : "rgba(14,165,233,0.9)"}
-                        strokeWidth={isHov ? 2 : 1.5}
+                        strokeWidth={isHov ? 2.5 : 1.5}
+                        opacity={dimmed ? 0.35 : 1}
                         filter={isHov ? "url(#glow)" : ""}
                         style={{ cursor: "pointer", transition: "all 0.25s" }}
                       />
+                      {/* Location label */}
                       <text
                         textAnchor="middle"
-                        y={-r - 6}
+                        y={-r - 7}
                         style={{
-                          fontSize: isHov ? 11 : 9,
+                          fontSize: isHov ? 12 : 9,
                           fill: isHov ? "#fbbf24" : "#cbd5e1",
-                          fontWeight: 600,
+                          fontWeight: isHov ? 700 : 600,
+                          opacity: dimmed ? 0.3 : 1,
                           pointerEvents: "none",
                           transition: "all 0.2s",
                         }}
                       >
                         {pt.location}
                       </text>
+                      {/* Count inside bubble */}
                       <text
                         textAnchor="middle"
-                        y={4}
+                        y={isHov ? 5 : 4}
                         style={{
-                          fontSize: isHov ? 11 : 9,
-                          fill: "#fff",
+                          fontSize: isHov ? 13 : 9,
+                          fill: isHov ? "#1a1a1a" : "#fff",
                           fontWeight: 700,
+                          opacity: dimmed ? 0.35 : 1,
                           pointerEvents: "none",
+                          transition: "all 0.2s",
                         }}
                       >
                         {pt.count}
