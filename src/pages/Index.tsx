@@ -127,6 +127,13 @@ export default function Index() {
           onDateToChange={setDateTo}
           companyDisabled={isStaff}
           branchDisabled={isStaff}
+          onReset={() => {
+            if (!isStaff) { setCompanyId("ALL"); setBranchId("ALL"); }
+            setStatus("ALL");
+            setCategory("ALL");
+            setDateFrom("");
+            setDateTo("");
+          }}
         />
 
         {/* Navigation Tabs */}

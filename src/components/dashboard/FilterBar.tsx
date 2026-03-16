@@ -26,6 +26,7 @@ interface FilterBarProps {
   onDateToChange: (v: string) => void;
   companyDisabled?: boolean;
   branchDisabled?: boolean;
+  onReset?: () => void;
 }
 
 function DatePicker({
@@ -80,8 +81,17 @@ export default function FilterBar({
   companyId, branchId, status, category, dateFrom, dateTo,
   onCompanyChange, onBranchChange, onStatusChange, onCategoryChange,
   onDateFromChange, onDateToChange,
-  companyDisabled, branchDisabled,
+  companyDisabled, branchDisabled, onReset,
 }: FilterBarProps) {
+  const hasActiveFilter = (
+    (!companyDisabled && companyId !== "ALL") ||
+    (!branchDisabled && branchId !== "ALL") ||
+    status !== "ALL" ||
+    category !== "ALL" ||
+    !!dateFrom ||
+    !!dateTo
+  );
+
   return (
     <div className="glass rounded-2xl p-4 mb-6">
       <div className="flex flex-wrap items-end gap-4">
@@ -124,6 +134,20 @@ export default function FilterBar({
 
         <DatePicker label="ตั้งแต่" value={dateFrom} onChange={onDateFromChange} placeholder="เลือกวันเริ่ม" />
         <DatePicker label="ถึงวันที่" value={dateTo} onChange={onDateToChange} placeholder="เลือกวันสิ้นสุด" />
+
+        {onReset && hasActiveFilter && (
+          <div className="flex flex-col justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              className="h-9 gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-white/10"
+            >
+              <X className="h-3.5 w-3.5" />
+              รีเซ็ต
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
