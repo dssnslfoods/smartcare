@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ interface ComplaintRow {
   complaint_number: string | null;
   complaint_date: string | null;
   status: string | null;
+  priority: string | null;
   resolution: string | null;
   resolved_at: string | null;
   companies: { name: string } | null;
@@ -25,6 +26,32 @@ interface ComplaintRow {
   problem_types: { name: string } | null;
   problem_sub_types: { name: string } | null;
   callers: { name: string } | null;
+}
+
+const PRIORITY_STYLES: Record<string, string> = {
+  critical:  "priority-badge priority-badge-critical",
+  high:      "priority-badge priority-badge-high",
+  medium:    "priority-badge priority-badge-medium",
+  low:       "priority-badge priority-badge-low",
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  critical: "วิกฤต",
+  high:     "สูง",
+  medium:   "กลาง",
+  low:      "ต่ำ",
+};
+
+function getDaysOpen(complaintDate: string | null, resolvedAt: string | null): number | null {
+  if (resolvedAt) return null;
+  if (!complaintDate) return null;
+  const diff = Math.floor((Date.now() - new Date(complaintDate).getTime()) / 86_400_000);
+  return diff;
+}
+
+function SlaChip({ days }: { days: number }) {
+  const cls = days > 14 ? "sla-chip sla-over" : days > 7 ? "sla-chip sla-warn" : "sla-chip sla-ok";
+  return <span className={cls}>{days}d</span>;
 }
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
@@ -76,7 +103,7 @@ export default function ComplaintList() {
 
       let countQuery = supabase.from("complaints").select("*", { count: "exact", head: true });
       let dataQuery = supabase.from("complaints").select(`
-        id, complaint_number, complaint_date, status, resolution, resolved_at,
+        id, complaint_number, complaint_date, status, priority, resolution, resolved_at,
         companies:company_id(name),
         branches:branch_id(name),
         product_groups:product_group_id(name),
@@ -179,47 +206,81 @@ export default function ComplaintList() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[140px]">เลขที่</TableHead>
-                    <TableHead className="w-[100px]">วันที่</TableHead>
+                    <TableHead className="w-[95px]">วันที่</TableHead>
                     <TableHead>บริษัท</TableHead>
-                    <TableHead>สาขา</TableHead>
-                    <TableHead>กลุ่มสินค้า</TableHead>
+                    <TableHead className="hidden lg:table-cell">สาขา</TableHead>
+                    <TableHead className="hidden xl:table-cell">กลุ่มสินค้า</TableHead>
                     <TableHead>ประเภทปัญหา</TableHead>
-                    <TableHead>ช่องทางการแจ้งปัญหา</TableHead>
+                    <TableHead className="hidden md:table-cell">ผู้แจ้ง</TableHead>
+                    <TableHead className="w-[80px]">ความสำคัญ</TableHead>
                     <TableHead className="w-[120px]">สถานะ</TableHead>
-                    <TableHead className="w-[100px]">วันที่แก้ไข</TableHead>
+                    <TableHead className="w-[70px] text-center">SLA</TableHead>
+                    <TableHead className="w-[56px] text-center">แก้ไข</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                        กำลังโหลด...
+                      <TableCell colSpan={11} className="text-center py-16 text-muted-foreground">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                          กำลังโหลด...
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : complaints.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                        ไม่พบข้อมูล
+                      <TableCell colSpan={11} className="text-center py-16 text-muted-foreground">
+                        ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
                       </TableCell>
                     </TableRow>
                   ) : (
-                    complaints.map(c => (
-                      <TableRow key={c.id} className="hover:bg-secondary/30 transition-colors">
-                        <TableCell className="font-mono text-xs">{c.complaint_number || "-"}</TableCell>
-                        <TableCell className="text-xs">{c.complaint_date || "-"}</TableCell>
-                        <TableCell className="text-sm">{c.companies?.name || "-"}</TableCell>
-                        <TableCell className="text-sm">{c.branches?.name || "-"}</TableCell>
-                        <TableCell className="text-sm">{c.product_groups?.name || "-"}</TableCell>
-                        <TableCell className="text-sm">{c.problem_types?.name || "-"}</TableCell>
-                        <TableCell className="text-sm">{c.callers?.name || "-"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`text-xs ${STATUS_COLORS[c.status || ""] || "bg-muted text-muted-foreground"}`}>
-                            {c.status || "-"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs">{c.resolved_at || "-"}</TableCell>
-                      </TableRow>
-                    ))
+                    complaints.map(c => {
+                      const daysOpen = getDaysOpen(c.complaint_date, c.resolved_at);
+                      const pKey = (c.priority || "").toLowerCase();
+                      return (
+                        <TableRow key={c.id} className="group hover:bg-secondary/30 transition-colors">
+                          <TableCell className="font-mono text-xs text-primary/90">{c.complaint_number || "-"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{c.complaint_date || "-"}</TableCell>
+                          <TableCell className="text-sm font-medium">{c.companies?.name || "-"}</TableCell>
+                          <TableCell className="text-sm hidden lg:table-cell text-muted-foreground">{c.branches?.name || "-"}</TableCell>
+                          <TableCell className="text-sm hidden xl:table-cell text-muted-foreground">{c.product_groups?.name || "-"}</TableCell>
+                          <TableCell className="text-sm max-w-[180px]">
+                            <div className="truncate">{c.problem_types?.name || "-"}</div>
+                            {c.problem_sub_types?.name && (
+                              <div className="text-[11px] text-muted-foreground truncate">{c.problem_sub_types.name}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs hidden md:table-cell text-muted-foreground">{c.callers?.name || "-"}</TableCell>
+                          <TableCell>
+                            {pKey && PRIORITY_STYLES[pKey] ? (
+                              <span className={PRIORITY_STYLES[pKey]}>{PRIORITY_LABELS[pKey] || c.priority}</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-xs ${STATUS_COLORS[c.status || ""] || "bg-muted/30 text-muted-foreground border-border/40"}`}>
+                              {c.status || "-"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {daysOpen !== null ? (
+                              <SlaChip days={daysOpen} />
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground/40">–</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Link to={`/complaints/new?edit=${c.id}`}>
+                              <button className="row-action-btn" title="แก้ไข">
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>

@@ -64,16 +64,17 @@ export default function TopNavBar() {
         </nav>
 
         {/* User info & Logout */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {role && (
-            <Badge variant="secondary" className="text-[10px] font-semibold tracking-wide uppercase">
+            <Badge variant="secondary" className="text-[10px] font-semibold tracking-wide uppercase hidden sm:inline-flex">
               {ROLE_LABELS[role] || role}
             </Badge>
           )}
-          <span className="text-[11px] text-muted-foreground hidden md:inline truncate max-w-[150px]">
+          <span className="text-[11px] text-muted-foreground hidden lg:inline truncate max-w-[140px]">
             {user?.email}
           </span>
-          <Button variant="ghost" size="sm" onClick={signOut} className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+          <div className="w-px h-4 bg-border/50 mx-1 hidden sm:block" />
+          <Button variant="ghost" size="sm" onClick={signOut} title="ออกจากระบบ" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

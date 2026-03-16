@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -20,7 +20,7 @@ const TABS = [
   { id: "groups", label: "กลุ่มสินค้า", icon: Factory },
   { id: "performance", label: "ประสิทธิภาพ", icon: Timer },
   { id: "deep", label: "เชิงลึก", icon: Microscope },
-  { id: "map", label: "แผนที่ CDC", icon: MapPin },
+  { id: "map", label: "วิเคราะห์ CDC เชิงพื้นที่", icon: MapPin },
 ];
 
 export default function Index() {
@@ -41,25 +41,40 @@ export default function Index() {
 
       <div className="max-w-[1440px] mx-auto px-6 py-6">
         {/* Page Header */}
-        <div className="mb-6 flex items-end justify-between flex-wrap gap-3">
+        <div className="mb-5 flex items-end justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Complaint Analysis
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {data.company} · {data.branch} · <span className="text-primary font-semibold">{count.toLocaleString()}</span> รายการ
+              {data.company} · {data.branch}
             </p>
           </div>
-          {!loading && count > 0 && (
-            <div className="flex items-center gap-3">
-              <span className={`status-badge ${data.kpi.close_rate >= 70 ? "status-badge-success" : data.kpi.close_rate >= 40 ? "status-badge-warning" : "status-badge-danger"}`}>
-                Close Rate: {data.kpi.close_rate}%
+          <div className="flex items-center gap-2">
+            {!loading && count > 0 && (
+              <>
+                <span className="status-badge bg-primary/10 text-primary border border-primary/20">
+                  {count.toLocaleString()} รายการ
+                </span>
+                <span className={`status-badge ${data.kpi.close_rate >= 70 ? "status-badge-success" : data.kpi.close_rate >= 40 ? "status-badge-warning" : "status-badge-danger"}`}>
+                  ปิด {data.kpi.close_rate}%
+                </span>
+                <span className="status-badge status-badge-warning">
+                  เฉลี่ย {data.kpi.avg_response_days} วัน
+                </span>
+                {data.kpi.not_closed > 0 && (
+                  <span className="status-badge status-badge-danger">
+                    ค้าง {data.kpi.not_closed} เคส
+                  </span>
+                )}
+              </>
+            )}
+            {loading && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" /> กำลังโหลด
               </span>
-              <span className="status-badge status-badge-warning">
-                Avg: {data.kpi.avg_response_days} วัน
-              </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Filter Bar */}

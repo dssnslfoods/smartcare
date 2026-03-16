@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X, Building2, Tag, UserCircle2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
@@ -57,6 +58,7 @@ const DEFAULT_PRIORITIES = [
 ];
 
 export default function ComplaintForm() {
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState(INITIAL_FORM);
   const [lookup, setLookup] = useState<LookupData>({
     companies: [], branches: [], product_groups: [], categories: [],
@@ -142,6 +144,14 @@ export default function ComplaintForm() {
     fetchLookups();
     fetchRecent();
   }, []);
+
+  // Auto-load complaint for editing when ?edit=<id> is in the URL
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId && !loading) {
+      handleEditRecent(editId);
+    }
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchRecent() {
     const { data } = await supabase.from("complaints").select(`
@@ -310,243 +320,203 @@ export default function ComplaintForm() {
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Row 1: Doc Number & Date */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="complaint_number" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">เลขที่เอกสาร <span className="text-destructive">*</span></Label>
-                    <Input id="complaint_number" placeholder="เช่น QAS.2.2025.09/001" value={form.complaint_number} onChange={e => setField("complaint_number", e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่ <span className="text-destructive">*</span></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.complaint_date && "text-muted-foreground")}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.complaint_date ? format(new Date(form.complaint_date), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={form.complaint_date ? new Date(form.complaint_date) : undefined}
-                          onSelect={(date) => setField("complaint_date", date ? format(date, "yyyy-MM-dd") : "")}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
+              <form onSubmit={handleSubmit} className="space-y-0">
 
-                {/* Row 2: Company & Branch */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">บริษัท <span className="text-destructive">*</span></Label>
-                    <Select value={form.company_id || "_none"} onValueChange={v => setField("company_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกบริษัท" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกบริษัท --</SelectItem>
-                        {lookup.companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สาขา</Label>
-                    <Select value={form.branch_id || "_none"} onValueChange={v => setField("branch_id", v === "_none" ? "" : v)} disabled={form.company_id && filteredBranches.length === 0}>
-                      <SelectTrigger><SelectValue placeholder={form.company_id && filteredBranches.length === 0 ? "ไม่มีสาขาสำหรับบริษัทนี้" : "เลือกสาขา"} /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกสาขา --</SelectItem>
-                        {filteredBranches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Row 3: Product Group & Category */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">กลุ่มสินค้า <span className="text-destructive">*</span></Label>
-                    <Select value={form.product_group_id || "_none"} onValueChange={v => setField("product_group_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกกลุ่มสินค้า" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกกลุ่มสินค้า --</SelectItem>
-                        {lookup.product_groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">หมวดหมู่ <span className="text-destructive">*</span></Label>
-                    <Select value={form.category_id || "_none"} onValueChange={v => setField("category_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกหมวดหมู่" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกหมวดหมู่ --</SelectItem>
-                        {filteredCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Row 4: Problem Type & Sub Type */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      ประเภทปัญหา <span className="text-destructive">*</span>
-                      {!form.category_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกหมวดหมู่ก่อน)</span>}
-                    </Label>
-                    <Select
-                      value={form.problem_type_id || "_none"}
-                      onValueChange={v => setField("problem_type_id", v === "_none" ? "" : v)}
-                      disabled={!form.category_id}
-                    >
-                      <SelectTrigger className={!form.category_id ? "opacity-50 cursor-not-allowed" : ""}>
-                        <SelectValue placeholder="เลือกประเภทปัญหา" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกประเภทปัญหา --</SelectItem>
-                        {filteredProblemTypes.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      ประเภทปัญหาย่อย <span className="text-destructive">*</span>
-                      {!form.problem_type_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกประเภทปัญหาก่อน)</span>}
-                    </Label>
-                    <Select
-                      value={form.problem_sub_type_id || "_none"}
-                      onValueChange={v => setField("problem_sub_type_id", v === "_none" ? "" : v)}
-                      disabled={!form.problem_type_id}
-                    >
-                      <SelectTrigger className={!form.problem_type_id ? "opacity-50 cursor-not-allowed" : ""}>
-                        <SelectValue placeholder="เลือกประเภทย่อย" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกประเภทย่อย --</SelectItem>
-                        {filteredSubTypes.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Row 5: Caller, Status, Priority */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ช่องทางการแจ้งปัญหา <span className="text-destructive">*</span></Label>
-                    <Select value={form.caller_id || "_none"} onValueChange={v => setField("caller_id", v === "_none" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกช่องทางการแจ้งปัญหา" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-- เลือกช่องทางการแจ้งปัญหา --</SelectItem>
-                        {lookup.callers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สถานะ <span className="text-destructive">*</span></Label>
-                    <Select value={form.status} onValueChange={v => setField("status", v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกสถานะ" /></SelectTrigger>
-                      <SelectContent>
-                        {(lookup.statuses.length > 0 ? lookup.statuses : DEFAULT_STATUSES).map(s => <SelectItem key={s.id || s.value} value={s.name || s.value}>{s.name || s.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ความสำคัญ <span className="text-destructive">*</span></Label>
-                    <Select value={form.priority} onValueChange={v => setField("priority", v)}>
-                      <SelectTrigger><SelectValue placeholder="เลือกความสำคัญ" /></SelectTrigger>
-                      <SelectContent>
-                        {(lookup.priorities.length > 0 ? lookup.priorities : DEFAULT_PRIORITIES).map(p => <SelectItem key={p.id || p.value} value={p.code || p.value}>{p.name || p.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายละเอียด <span className="text-destructive">*</span></Label>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={listeningField === "description" ? "default" : "outline"}
-                      onClick={() => toggleMic("description")}
-                      className="gap-2"
-                    >
-                      {listeningField === "description" ? (
-                        <>
-                          <Mic className="h-4 w-4 animate-pulse" />
-                          กำลังฟัง...
-                        </>
-                      ) : (
-                        <>
-                          <MicOff className="h-4 w-4" />
-                          พูด
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <Textarea id="description" placeholder="อธิบายรายละเอียดข้อร้องเรียน..." value={form.description} onChange={e => setField("description", e.target.value)} rows={3} />
-                </div>
-
-                {/* Resolution & Resolved Date */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข <span className="text-destructive">*</span></Label>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={listeningField === "resolution" ? "default" : "outline"}
-                        onClick={() => toggleMic("resolution")}
-                        className="gap-2"
-                      >
-                        {listeningField === "resolution" ? (
-                          <>
-                            <Mic className="h-4 w-4 animate-pulse" />
-                            กำลังฟัง...
-                          </>
-                        ) : (
-                          <>
-                            <MicOff className="h-4 w-4" />
-                            พูด
-                          </>
-                        )}
-                      </Button>
+                {/* ─── Section 1: ข้อมูลพื้นฐาน ─── */}
+                <div className="form-section">
+                  <p className="form-section-title"><Building2 className="w-3.5 h-3.5" />ข้อมูลพื้นฐาน</p>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="complaint_number" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">เลขที่เอกสาร <span className="text-destructive">*</span></Label>
+                        <Input id="complaint_number" placeholder="เช่น QAS.2.2025.09/001" value={form.complaint_number} onChange={e => setField("complaint_number", e.target.value)} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่ <span className="text-destructive">*</span></Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.complaint_date && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {form.complaint_date ? format(new Date(form.complaint_date), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={form.complaint_date ? new Date(form.complaint_date) : undefined} onSelect={(date) => setField("complaint_date", date ? format(date, "yyyy-MM-dd") : "")} initialFocus className="p-3 pointer-events-auto" />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
-                    <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={2} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข <span className="text-destructive">*</span></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.resolved_at && "text-muted-foreground")}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.resolved_at ? format(new Date(form.resolved_at), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่แก้ไข</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={form.resolved_at ? new Date(form.resolved_at) : undefined}
-                          onSelect={(date) => setField("resolved_at", date ? format(date, "yyyy-MM-dd") : "")}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">บริษัท <span className="text-destructive">*</span></Label>
+                        <Select value={form.company_id || "_none"} onValueChange={v => setField("company_id", v === "_none" ? "" : v)}>
+                          <SelectTrigger><SelectValue placeholder="เลือกบริษัท" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-- เลือกบริษัท --</SelectItem>
+                            {lookup.companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สาขา</Label>
+                        <Select value={form.branch_id || "_none"} onValueChange={v => setField("branch_id", v === "_none" ? "" : v)} disabled={!!form.company_id && filteredBranches.length === 0}>
+                          <SelectTrigger><SelectValue placeholder={form.company_id && filteredBranches.length === 0 ? "ไม่มีสาขาสำหรับบริษัทนี้" : "เลือกสาขา"} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-- เลือกสาขา --</SelectItem>
+                            {filteredBranches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Submit */}
-                <Button type="submit" disabled={saving} size="lg" className="w-full rounded-xl">
-                  {saving ? (
-                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> กำลังบันทึก...</span>
-                  ) : editingId ? (
-                    <span className="flex items-center gap-2"><Save className="h-4 w-4" /> บันทึกการแก้ไข</span>
-                  ) : (
-                    <span className="flex items-center gap-2"><Save className="h-4 w-4" /> บันทึกข้อร้องเรียน</span>
-                  )}
-                </Button>
+                {/* ─── Section 2: การจำแนกประเภท ─── */}
+                <div className="form-section">
+                  <p className="form-section-title"><Tag className="w-3.5 h-3.5" />การจำแนกประเภท</p>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">กลุ่มสินค้า <span className="text-destructive">*</span></Label>
+                        <Select value={form.product_group_id || "_none"} onValueChange={v => setField("product_group_id", v === "_none" ? "" : v)}>
+                          <SelectTrigger><SelectValue placeholder="เลือกกลุ่มสินค้า" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-- เลือกกลุ่มสินค้า --</SelectItem>
+                            {lookup.product_groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">หมวดหมู่ <span className="text-destructive">*</span></Label>
+                        <Select value={form.category_id || "_none"} onValueChange={v => setField("category_id", v === "_none" ? "" : v)}>
+                          <SelectTrigger><SelectValue placeholder="เลือกหมวดหมู่" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-- เลือกหมวดหมู่ --</SelectItem>
+                            {filteredCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          ประเภทปัญหา <span className="text-destructive">*</span>
+                          {!form.category_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกหมวดหมู่ก่อน)</span>}
+                        </Label>
+                        <Select value={form.problem_type_id || "_none"} onValueChange={v => setField("problem_type_id", v === "_none" ? "" : v)} disabled={!form.category_id}>
+                          <SelectTrigger className={!form.category_id ? "opacity-50 cursor-not-allowed" : ""}><SelectValue placeholder="เลือกประเภทปัญหา" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-- เลือกประเภทปัญหา --</SelectItem>
+                            {filteredProblemTypes.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          ประเภทปัญหาย่อย <span className="text-destructive">*</span>
+                          {!form.problem_type_id && <span className="ml-1 text-muted-foreground/50 font-normal normal-case">(เลือกประเภทก่อน)</span>}
+                        </Label>
+                        <Select value={form.problem_sub_type_id || "_none"} onValueChange={v => setField("problem_sub_type_id", v === "_none" ? "" : v)} disabled={!form.problem_type_id}>
+                          <SelectTrigger className={!form.problem_type_id ? "opacity-50 cursor-not-allowed" : ""}><SelectValue placeholder="เลือกประเภทย่อย" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-- เลือกประเภทย่อย --</SelectItem>
+                            {filteredSubTypes.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Section 3: ผู้แจ้งและสถานะ ─── */}
+                <div className="form-section">
+                  <p className="form-section-title"><UserCircle2 className="w-3.5 h-3.5" />ผู้แจ้งและสถานะ</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ช่องทางการแจ้งปัญหา <span className="text-destructive">*</span></Label>
+                      <Select value={form.caller_id || "_none"} onValueChange={v => setField("caller_id", v === "_none" ? "" : v)}>
+                        <SelectTrigger><SelectValue placeholder="เลือกช่องทาง" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_none">-- เลือกช่องทาง --</SelectItem>
+                          {lookup.callers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">สถานะ <span className="text-destructive">*</span></Label>
+                      <Select value={form.status} onValueChange={v => setField("status", v)}>
+                        <SelectTrigger><SelectValue placeholder="เลือกสถานะ" /></SelectTrigger>
+                        <SelectContent>
+                          {(lookup.statuses.length > 0 ? lookup.statuses : DEFAULT_STATUSES).map(s => <SelectItem key={s.id || s.value} value={s.name || s.value}>{s.name || s.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ความสำคัญ <span className="text-destructive">*</span></Label>
+                      <Select value={form.priority} onValueChange={v => setField("priority", v)}>
+                        <SelectTrigger><SelectValue placeholder="เลือกความสำคัญ" /></SelectTrigger>
+                        <SelectContent>
+                          {(lookup.priorities.length > 0 ? lookup.priorities : DEFAULT_PRIORITIES).map(p => <SelectItem key={p.id || p.value} value={p.code || p.value}>{p.name || p.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Section 4: รายละเอียดและการแก้ไข ─── */}
+                <div className="form-section">
+                  <p className="form-section-title"><FileText className="w-3.5 h-3.5" />รายละเอียดและการแก้ไข</p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายละเอียด <span className="text-destructive">*</span></Label>
+                        <Button type="button" size="sm" variant={listeningField === "description" ? "default" : "outline"} onClick={() => toggleMic("description")} className="gap-2 h-7 text-xs px-2.5">
+                          {listeningField === "description" ? <><Mic className="h-3.5 w-3.5 animate-pulse" />กำลังฟัง...</> : <><MicOff className="h-3.5 w-3.5" />พูด</>}
+                        </Button>
+                      </div>
+                      <Textarea id="description" placeholder="อธิบายรายละเอียดข้อร้องเรียน..." value={form.description} onChange={e => setField("description", e.target.value)} rows={3} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข <span className="text-destructive">*</span></Label>
+                          <Button type="button" size="sm" variant={listeningField === "resolution" ? "default" : "outline"} onClick={() => toggleMic("resolution")} className="gap-2 h-7 text-xs px-2.5">
+                            {listeningField === "resolution" ? <><Mic className="h-3.5 w-3.5 animate-pulse" />กำลังฟัง...</> : <><MicOff className="h-3.5 w-3.5" />พูด</>}
+                          </Button>
+                        </div>
+                        <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={3} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข <span className="text-destructive">*</span></Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.resolved_at && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {form.resolved_at ? format(new Date(form.resolved_at), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่แก้ไข</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={form.resolved_at ? new Date(form.resolved_at) : undefined} onSelect={(date) => setField("resolved_at", date ? format(date, "yyyy-MM-dd") : "")} initialFocus className="p-3 pointer-events-auto" />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Submit ─── */}
+                <div className="pt-5 mt-1 border-t border-border/30">
+                  <Button type="submit" disabled={saving} size="lg" className="w-full rounded-xl">
+                    {saving ? (
+                      <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />กำลังบันทึก...</span>
+                    ) : editingId ? (
+                      <span className="flex items-center gap-2"><Save className="h-4 w-4" />บันทึกการแก้ไข</span>
+                    ) : (
+                      <span className="flex items-center gap-2"><Save className="h-4 w-4" />บันทึกข้อร้องเรียน</span>
+                    )}
+                  </Button>
+                </div>
+
               </form>
             </div>
           </div>
