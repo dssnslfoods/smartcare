@@ -422,13 +422,19 @@ export default function MapTab() {
         </div>
 
         {/* Side panel — CDC list */}
-        <div className="chart-card flex flex-col">
-          <div className="chart-title">
+        <div className="chart-card flex flex-col" style={{ height: 640 }}>
+          <div className="chart-title shrink-0">
             <span className="chart-icon" style={{ background: "rgba(167,139,250,0.2)" }}>📊</span>
             รายละเอียด CDC
           </div>
 
-          <div className="flex-1 overflow-auto space-y-2 mt-1">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 mt-1 pr-1
+            [&::-webkit-scrollbar]:w-1.5
+            [&::-webkit-scrollbar-track]:rounded-full
+            [&::-webkit-scrollbar-track]:bg-white/5
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            [&::-webkit-scrollbar-thumb]:bg-primary/30
+            hover:[&::-webkit-scrollbar-thumb]:bg-primary/50">
             {[...cdcStats].sort((a, b) => b.count - a.count).map((pt, idx) => {
               const pct = totalComplaints > 0 ? ((pt.count / totalComplaints) * 100).toFixed(1) : "0.0";
               const barW = maxCount > 0 ? (pt.count / maxCount) * 100 : 0;
@@ -492,8 +498,10 @@ export default function MapTab() {
                 </div>
               );
             })}
+          </div>
 
-            {/* Total footer */}
+          {/* Total footer — pinned, outside scroll */}
+          <div className="shrink-0 pt-2 mt-1 border-t border-border/20">
             <div className="p-3 rounded-xl border border-border/30 bg-white/[0.03]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground">รวมทุก CDC</span>
