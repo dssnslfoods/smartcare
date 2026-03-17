@@ -6,13 +6,13 @@ import { Loader2, MapPin, TrendingUp, Clock, AlertTriangle } from "lucide-react"
 const GEO_URL = "/thailand-provinces.json";
 
 // Colors per region — dark glass-morphism palette, muted enough to not clash with CDC markers
-const REGION_COLORS: Record<string, { fill: string; hover: string }> = {
-  Northern:    { fill: "rgba(139,92,246,0.18)",  hover: "rgba(139,92,246,0.30)" },  // purple
-  Northeastern: { fill: "rgba(251,146,60,0.15)", hover: "rgba(251,146,60,0.27)" },  // orange
-  Central:     { fill: "rgba(52,211,153,0.14)",  hover: "rgba(52,211,153,0.25)" },  // green
-  Eastern:     { fill: "rgba(56,189,248,0.15)",  hover: "rgba(56,189,248,0.27)" },  // sky
-  Western:     { fill: "rgba(232,121,249,0.14)", hover: "rgba(232,121,249,0.25)" }, // fuchsia
-  Southern:    { fill: "rgba(250,204,21,0.13)",  hover: "rgba(250,204,21,0.24)" },  // yellow
+const REGION_COLORS: Record<string, { fill: string; stroke: string; hover: string }> = {
+  Northern:     { fill: "rgba(139,92,246,0.40)",  stroke: "rgba(139,92,246,0.75)",  hover: "rgba(139,92,246,0.58)" },
+  Northeastern: { fill: "rgba(251,146,60,0.38)",  stroke: "rgba(251,146,60,0.75)",  hover: "rgba(251,146,60,0.55)" },
+  Central:      { fill: "rgba(52,211,153,0.35)",  stroke: "rgba(52,211,153,0.70)",  hover: "rgba(52,211,153,0.52)" },
+  Eastern:      { fill: "rgba(56,189,248,0.35)",  stroke: "rgba(56,189,248,0.70)",  hover: "rgba(56,189,248,0.52)" },
+  Western:      { fill: "rgba(232,121,249,0.35)", stroke: "rgba(232,121,249,0.70)", hover: "rgba(232,121,249,0.52)" },
+  Southern:     { fill: "rgba(250,204,21,0.33)",  stroke: "rgba(250,204,21,0.70)",  hover: "rgba(250,204,21,0.50)" },
 };
 
 const REGION_LABELS: Record<string, string> = {
@@ -296,13 +296,11 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
                       const isHL = highlightedProvinces.has(provName);
                       const regionColor = region ? REGION_COLORS[region] : null;
 
-                      // CDC-province: bright sky blue highlight; others: region color
-                      const defaultFill = isHL
-                        ? "rgba(14,165,233,0.35)"
-                        : (regionColor?.fill ?? "rgba(148,163,184,0.08)");
-                      const hoverFill = isHL
-                        ? "rgba(14,165,233,0.50)"
-                        : (regionColor?.hover ?? "rgba(148,163,184,0.18)");
+                      // CDC-province: bright sky blue; others: region color
+                      const defaultFill  = isHL ? "rgba(14,165,233,0.55)"  : (regionColor?.fill   ?? "rgba(148,163,184,0.12)");
+                      const hoverFill    = isHL ? "rgba(14,165,233,0.72)"  : (regionColor?.hover  ?? "rgba(148,163,184,0.25)");
+                      const defaultStroke = isHL ? "rgba(14,165,233,0.80)" : (regionColor?.stroke ?? "rgba(148,163,184,0.30)");
+                      const hoverStroke   = isHL ? "rgba(14,165,233,1.0)"  : (regionColor?.stroke ?? "rgba(148,163,184,0.55)");
 
                       return (
                         <Geography
@@ -311,14 +309,14 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
                           style={{
                             default: {
                               fill: defaultFill,
-                              stroke: isHL ? "rgba(14,165,233,0.55)" : "rgba(148,163,184,0.22)",
-                              strokeWidth: isHL ? 0.7 : 0.35,
+                              stroke: defaultStroke,
+                              strokeWidth: isHL ? 0.8 : 0.4,
                               outline: "none",
                             },
                             hover: {
                               fill: hoverFill,
-                              stroke: isHL ? "rgba(14,165,233,0.75)" : "rgba(148,163,184,0.40)",
-                              strokeWidth: isHL ? 0.9 : 0.45,
+                              stroke: hoverStroke,
+                              strokeWidth: isHL ? 1.0 : 0.55,
                               outline: "none",
                             },
                             pressed: { outline: "none" },
