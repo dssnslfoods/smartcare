@@ -6,13 +6,14 @@ import { Loader2, MapPin, TrendingUp, Clock, AlertTriangle } from "lucide-react"
 const GEO_URL = "/thailand-provinces.json";
 
 // Colors per region — dark glass-morphism palette, muted enough to not clash with CDC markers
+// Colors chosen for visibility on dark navy (hsl 220 20% 7%) background
 const REGION_COLORS: Record<string, { fill: string; stroke: string; hover: string }> = {
-  Northern:     { fill: "rgba(139,92,246,0.40)",  stroke: "rgba(139,92,246,0.75)",  hover: "rgba(139,92,246,0.58)" },
-  Northeastern: { fill: "rgba(251,146,60,0.38)",  stroke: "rgba(251,146,60,0.75)",  hover: "rgba(251,146,60,0.55)" },
-  Central:      { fill: "rgba(52,211,153,0.35)",  stroke: "rgba(52,211,153,0.70)",  hover: "rgba(52,211,153,0.52)" },
-  Eastern:      { fill: "rgba(56,189,248,0.35)",  stroke: "rgba(56,189,248,0.70)",  hover: "rgba(56,189,248,0.52)" },
-  Western:      { fill: "rgba(232,121,249,0.35)", stroke: "rgba(232,121,249,0.70)", hover: "rgba(232,121,249,0.52)" },
-  Southern:     { fill: "rgba(250,204,21,0.33)",  stroke: "rgba(250,204,21,0.70)",  hover: "rgba(250,204,21,0.50)" },
+  Northern:     { fill: "rgba(167,139,250,0.60)", stroke: "rgba(167,139,250,0.90)", hover: "rgba(167,139,250,0.78)" }, // violet
+  Northeastern: { fill: "rgba(251,146,60,0.58)",  stroke: "rgba(251,146,60,0.92)",  hover: "rgba(251,146,60,0.76)" }, // orange
+  Central:      { fill: "rgba(52,211,153,0.55)",  stroke: "rgba(52,211,153,0.88)",  hover: "rgba(52,211,153,0.73)" }, // emerald
+  Eastern:      { fill: "rgba(244,114,182,0.55)", stroke: "rgba(244,114,182,0.88)", hover: "rgba(244,114,182,0.73)" }, // rose/pink (≠ CDC blue)
+  Western:      { fill: "rgba(232,121,249,0.55)", stroke: "rgba(232,121,249,0.88)", hover: "rgba(232,121,249,0.73)" }, // fuchsia
+  Southern:     { fill: "rgba(250,204,21,0.52)",  stroke: "rgba(250,204,21,0.88)",  hover: "rgba(250,204,21,0.70)" }, // amber/gold
 };
 
 const REGION_LABELS: Record<string, string> = {
@@ -296,11 +297,11 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
                       const isHL = highlightedProvinces.has(provName);
                       const regionColor = region ? REGION_COLORS[region] : null;
 
-                      // CDC-province: bright sky blue; others: region color
-                      const defaultFill  = isHL ? "rgba(14,165,233,0.55)"  : (regionColor?.fill   ?? "rgba(148,163,184,0.12)");
-                      const hoverFill    = isHL ? "rgba(14,165,233,0.72)"  : (regionColor?.hover  ?? "rgba(148,163,184,0.25)");
-                      const defaultStroke = isHL ? "rgba(14,165,233,0.80)" : (regionColor?.stroke ?? "rgba(148,163,184,0.30)");
-                      const hoverStroke   = isHL ? "rgba(14,165,233,1.0)"  : (regionColor?.stroke ?? "rgba(148,163,184,0.55)");
+                      // CDC-province: bright sky blue overlaid on region color
+                      const defaultFill  = isHL ? "rgba(14,165,233,0.72)"  : (regionColor?.fill   ?? "rgba(148,163,184,0.18)");
+                      const hoverFill    = isHL ? "rgba(14,165,233,0.88)"  : (regionColor?.hover  ?? "rgba(148,163,184,0.32)");
+                      const defaultStroke = isHL ? "rgba(56,189,248,0.95)" : (regionColor?.stroke ?? "rgba(148,163,184,0.40)");
+                      const hoverStroke   = isHL ? "rgba(56,189,248,1.0)"  : (regionColor?.stroke ?? "rgba(148,163,184,0.65)");
 
                       return (
                         <Geography
