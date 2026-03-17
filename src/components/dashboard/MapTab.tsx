@@ -1,29 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
+import { ComposableMap, Geographies, Marker, ZoomableGroup } from "react-simple-maps";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, MapPin, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 
 const GEO_URL = "/thailand-provinces.json";
-
-// Colors per region — dark glass-morphism palette, muted enough to not clash with CDC markers
-// Colors chosen for visibility on dark navy (hsl 220 20% 7%) background
-const REGION_COLORS: Record<string, { fill: string; stroke: string; hover: string }> = {
-  Northern:     { fill: "rgba(167,139,250,0.60)", stroke: "rgba(167,139,250,0.90)", hover: "rgba(167,139,250,0.78)" }, // violet
-  Northeastern: { fill: "rgba(251,146,60,0.58)",  stroke: "rgba(251,146,60,0.92)",  hover: "rgba(251,146,60,0.76)" }, // orange
-  Central:      { fill: "rgba(52,211,153,0.55)",  stroke: "rgba(52,211,153,0.88)",  hover: "rgba(52,211,153,0.73)" }, // emerald
-  Eastern:      { fill: "rgba(244,114,182,0.55)", stroke: "rgba(244,114,182,0.88)", hover: "rgba(244,114,182,0.73)" }, // rose/pink (≠ CDC blue)
-  Western:      { fill: "rgba(232,121,249,0.55)", stroke: "rgba(232,121,249,0.88)", hover: "rgba(232,121,249,0.73)" }, // fuchsia
-  Southern:     { fill: "rgba(250,204,21,0.52)",  stroke: "rgba(250,204,21,0.88)",  hover: "rgba(250,204,21,0.70)" }, // amber/gold
-};
-
-const REGION_LABELS: Record<string, string> = {
-  Northern: "ภาคเหนือ",
-  Northeastern: "ภาคตะวันออกเฉียงเหนือ",
-  Central: "ภาคกลาง",
-  Eastern: "ภาคตะวันออก",
-  Western: "ภาคตะวันตก",
-  Southern: "ภาคใต้",
-};
 
 const CDC_PROVINCE_MAP: Record<string, string> = {
   "มหาชัย": "Samut Sakhon",
@@ -295,22 +275,16 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
                   {({ geographies }) =>
                     geographies.map(geo => {
                       const provName = geo.properties.name;
-                      const region = geo.properties.region as string | undefined;
                       const isHL = highlightedProvinces.has(provName);
-                      const regionColor = region ? REGION_COLORS[region] : null;
-
-                      const fill   = isHL ? "rgba(14,165,233,0.72)"  : (regionColor?.fill   ?? "rgba(100,116,139,0.22)");
-                      const stroke = isHL ? "rgba(56,189,248,0.90)"  : (regionColor?.stroke ?? "rgba(100,116,139,0.45)");
-                      const sw     = isHL ? 0.9 : 0.45;
 
                       return (
                         <path
                           key={geo.rsmKey}
                           d={geo.svgPath}
-                          fill={fill}
-                          stroke={stroke}
-                          strokeWidth={sw}
-                          style={{ outline: "none", cursor: "default", transition: "fill 0.15s" }}
+                          fill={isHL ? "rgba(14,165,233,0.35)" : "rgba(148,163,184,0.08)"}
+                          stroke="rgba(148,163,184,0.25)"
+                          strokeWidth={0.4}
+                          style={{ outline: "none", cursor: "default" }}
                         />
                       );
                     })
@@ -457,29 +431,6 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
                 )}
               </div>
             )}
-          </div>
-
-          {/* Region legend */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-3 px-2">
-            {Object.entries(REGION_LABELS).map(([key, label]) => {
-              const color = REGION_COLORS[key];
-              return (
-                <div key={key} className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block w-3 h-3 rounded-sm border"
-                    style={{
-                      background: color.hover,
-                      borderColor: color.hover.replace(/[\d.]+\)$/, "0.6)"),
-                    }}
-                  />
-                  <span className="text-[10px] text-muted-foreground">{label}</span>
-                </div>
-              );
-            })}
-            <div className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm border border-sky-400/60 bg-sky-400/35" />
-              <span className="text-[10px] text-muted-foreground">จังหวัดที่มี CDC</span>
-            </div>
           </div>
 
           <p className="text-[10px] text-muted-foreground text-center mt-2 opacity-60">
