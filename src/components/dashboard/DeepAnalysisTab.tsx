@@ -9,50 +9,61 @@ interface Props { data: CompanyData }
 
 const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
 
-// ---- TTS hook ----
+// ---- TTS hook (pause/resume support) ----
 function useTTS() {
-  const [speaking, setSpeaking] = useState(false);
+  const [status, setStatus] = useState<"idle" | "playing" | "paused">("idle");
   const [supported] = useState(() => typeof window !== "undefined" && "speechSynthesis" in window);
 
-  // stop on unmount
+  // cancel fully on unmount
   useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
-
-  // sync state with browser events
-  useEffect(() => {
-    if (!supported) return;
-    const onEnd = () => setSpeaking(false);
-    window.speechSynthesis.addEventListener?.("voiceschanged", () => {});
-    return () => { window.speechSynthesis.removeEventListener?.("voiceschanged", () => {}); };
-  }, [supported]);
 
   const speak = useCallback((text: string) => {
     if (!supported) return;
-    window.speechSynthesis.cancel();
+    const ss = window.speechSynthesis;
+
+    // If paused → resume from where we left off
+    if (ss.paused && ss.speaking) {
+      ss.resume();
+      setStatus("playing");
+      return;
+    }
+
+    // Fresh start
+    ss.cancel();
     const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = "th-TH";
-    utt.rate = 0.95;
+    utt.lang  = "th-TH";
+    utt.rate  = 0.95;
     utt.pitch = 1;
-    // try to pick a Thai voice
-    const voices = window.speechSynthesis.getVoices();
+    const voices = ss.getVoices();
     const thVoice = voices.find(v => v.lang.startsWith("th")) ?? voices.find(v => v.lang.startsWith("en"));
     if (thVoice) utt.voice = thVoice;
-    utt.onstart = () => setSpeaking(true);
-    utt.onend   = () => setSpeaking(false);
-    utt.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(utt);
+    utt.onstart = () => setStatus("playing");
+    utt.onend   = () => setStatus("idle");
+    utt.onerror = () => setStatus("idle");
+    utt.onpause = () => setStatus("paused");
+    utt.onresume = () => setStatus("playing");
+    ss.speak(utt);
   }, [supported]);
 
-  const stop = useCallback(() => {
+  // Pause (keeps position) — call speak() again to resume
+  const pause = useCallback(() => {
+    if (!supported) return;
+    window.speechSynthesis.pause();
+    setStatus("paused");
+  }, [supported]);
+
+  // Full stop + reset
+  const cancel = useCallback(() => {
     if (!supported) return;
     window.speechSynthesis.cancel();
-    setSpeaking(false);
+    setStatus("idle");
   }, [supported]);
 
-  return { speaking, supported, speak, stop };
+  return { status, supported, speak, pause, cancel };
 }
 
 export default function DeepAnalysisTab({ data }: Props) {
-  const { speaking, supported, speak, stop } = useTTS();
+  const { status, supported, speak, pause, cancel } = useTTS();
 
   const spEntries = Object.entries(data.sub_problem);
   const total = spEntries.reduce((s, [, v]) => s + v, 0);
@@ -129,30 +140,62 @@ export default function DeepAnalysisTab({ data }: Props) {
             การวิเคราะห์เชิงลึก
           </div>
 
-          {/* TTS Button */}
+          {/* TTS Controls */}
           {supported && (
-            <button
-              onClick={() => speaking ? stop() : speak(buildScript())}
-              title={speaking ? "หยุดฟัง" : "ฟังสรุปผลการวิเคราะห์"}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border
-                ${speaking
-                  ? "bg-rose-500/20 border-rose-500/50 text-rose-400 hover:bg-rose-500/30"
-                  : "bg-sky-500/15 border-sky-500/35 text-sky-400 hover:bg-sky-500/25"
-                }`}
-            >
-              {speaking
-                ? <><VolumeX className="w-3.5 h-3.5" /> หยุดฟัง</>
-                : <><Volume2 className="w-3.5 h-3.5" /> ฟังสรุป</>
-              }
-              {speaking && (
-                <span className="flex gap-0.5 items-end h-3.5">
-                  {[0, 150, 300].map(d => (
-                    <span key={d} className="w-0.5 bg-rose-400 rounded-full animate-bounce"
-                      style={{ height: "60%", animationDelay: `${d}ms` }} />
-                  ))}
-                </span>
+            <div className="flex items-center gap-2">
+              {/* Play / Pause / Resume */}
+              <button
+                onClick={() => status === "playing" ? pause() : speak(buildScript())}
+                title={status === "playing" ? "หยุดชั่วคราว" : status === "paused" ? "เล่นต่อ" : "ฟังสรุปผลการวิเคราะห์"}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border
+                  ${status === "playing"
+                    ? "bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30"
+                    : status === "paused"
+                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30"
+                    : "bg-sky-500/15 border-sky-500/35 text-sky-400 hover:bg-sky-500/25"
+                  }`}
+              >
+                {status === "playing" ? (
+                  <>
+                    {/* pause icon */}
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
+                      <rect x="3" y="2" width="3.5" height="12" rx="1" />
+                      <rect x="9.5" y="2" width="3.5" height="12" rx="1" />
+                    </svg>
+                    หยุดชั่วคราว
+                    <span className="flex gap-0.5 items-end h-3.5">
+                      {[0, 150, 300].map(d => (
+                        <span key={d} className="w-0.5 bg-amber-400 rounded-full animate-bounce"
+                          style={{ height: "60%", animationDelay: `${d}ms` }} />
+                      ))}
+                    </span>
+                  </>
+                ) : status === "paused" ? (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5" />
+                    เล่นต่อ
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5" />
+                    ฟังสรุป
+                  </>
+                )}
+              </button>
+
+              {/* Stop button — only show when playing or paused */}
+              {status !== "idle" && (
+                <button
+                  onClick={cancel}
+                  title="หยุดและเริ่มใหม่"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border
+                    bg-rose-500/15 border-rose-500/35 text-rose-400 hover:bg-rose-500/25 transition-all duration-200"
+                >
+                  <VolumeX className="w-3.5 h-3.5" />
+                  หยุด
+                </button>
               )}
-            </button>
+            </div>
           )}
         </div>
 
