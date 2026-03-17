@@ -4,6 +4,8 @@ import {
 } from "recharts";
 import { Factory, Users, Grid3X3 } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
+import TTSButton from "./TTSButton";
+import { useTTS } from "@/hooks/useTTS";
 
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#a855f7"];
 
@@ -52,6 +54,7 @@ function applyMatrixGrouping(
 }
 
 export default function GroupsTab({ data }: Props) {
+  const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
   const [groupCDC, setGroupCDC] = useState(false);
   const codeMap: Record<string, string> = (data as any).group_code_map || {};
 
@@ -69,6 +72,27 @@ export default function GroupsTab({ data }: Props) {
   const problems = [...new Set(matrix.map(x => x.problem))];
 
   const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
+
+  const buildScript = () => {
+    const top3Groups = groupData.slice(0, 3).map((g, i) =>
+      `อันดับ ${i + 1} ${g.name} จำนวน ${g.value.toLocaleString()} เคส`).join(" ");
+    const top3Callers = callerData.slice(0, 3).map((c, i) =>
+      `อันดับ ${i + 1} ${c.name} จำนวน ${c.value.toLocaleString()} เคส`).join(" ");
+    const topHeat = matrix.length > 0
+      ? (() => {
+          const sorted = [...matrix].sort((a, b) => b.count - a.count);
+          const top = sorted[0];
+          return top ? `จุดเสี่ยงสูงสุดใน Heatmap คือกลุ่ม ${top.group} ปัญหา ${top.problem} จำนวน ${top.count.toLocaleString()} เคส` : "";
+        })()
+      : "";
+    return [
+      "สรุปกลุ่มสินค้า Executive Summary",
+      `มีกลุ่มสินค้าทั้งหมด ${groupData.length} กลุ่ม กลุ่มที่พบ Complaint สูงสุด: ${top3Groups}`,
+      `ช่องทางการแจ้งปัญหาหลัก: ${top3Callers}`,
+      topHeat,
+      `ข้อแนะนำ: เฝ้าระวังกลุ่มสินค้าที่มียอดสูงสุด และตรวจสอบจุดเสี่ยงใน Heatmap เพื่อวางแผนป้องกันเชิงรุก`,
+    ].filter(Boolean).join(" ... ");
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -127,23 +151,27 @@ export default function GroupsTab({ data }: Props) {
       </div>
 
       <div className="chart-card">
-        <div className="chart-title flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
           <div className="flex items-center gap-2">
             <span className="chart-icon" style={{ background: "rgba(6,182,212,0.15)" }}><Grid3X3 className="w-3.5 h-3.5 text-cyan-400" /></span>
-            Heatmap: กลุ่มสินค้า x ประเภทปัญหา
+            <span className="chart-title !mb-0">Heatmap: กลุ่มสินค้า x ประเภทปัญหา</span>
           </div>
-          {hasCDC && (
-            <button
-              onClick={() => setGroupCDC(v => !v)}
-              className={`text-xs px-3 py-1 rounded-full border transition-all font-semibold ${
-                groupCDC
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-transparent text-muted-foreground border-border hover:border-primary hover:text-primary"
-              }`}
-            >
-              {groupCDC ? "✓ รวม CDC" : "รวม CDC"}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <TTSButton status={ttsStatus} supported={supported}
+              onPlay={() => speak(buildScript())} onPause={pause} onCancel={cancel} />
+            {hasCDC && (
+              <button
+                onClick={() => setGroupCDC(v => !v)}
+                className={`text-xs px-3 py-1 rounded-full border transition-all font-semibold ${
+                  groupCDC
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary hover:text-primary"
+                }`}
+              >
+                {groupCDC ? "✓ รวม CDC" : "รวม CDC"}
+              </button>
+            )}
+          </div>
         </div>
         <div className="overflow-x-auto">
           {(() => {

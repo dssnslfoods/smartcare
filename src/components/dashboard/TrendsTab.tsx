@@ -3,6 +3,8 @@ import {
 } from "recharts";
 import { BarChart3, GitBranch } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
+import TTSButton from "./TTSButton";
+import { useTTS } from "@/hooks/useTTS";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -17,6 +19,7 @@ const CAT_COLORS: Record<string, string> = {
 interface Props { data: CompanyData }
 
 export default function TrendsTab({ data }: Props) {
+  const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
   const monthOrder = ["01_January", "02_February", "03_March", "04_April", "05_May", "06_June",
     "07_July", "08_August", "09_September", "10_October", "11_November", "12_December"];
   const uniqueMonths = [...new Set(data.monthly_status.map(m => m.month))];
@@ -50,6 +53,25 @@ export default function TrendsTab({ data }: Props) {
 
   const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
 
+  const buildScript = () => {
+    const topCatMonth = categoryStackData.reduce((best, m) => {
+      const t = (m["Recall"] as number) + (m["Complaint Food Safety"] as number) +
+        (m["Complaint Food Quality"] as number) + (m["Complaint Food Law"] as number) +
+        (m["Complaint Service"] as number);
+      return t > best.total ? { name: m.name, total: t } : best;
+    }, { name: "", total: 0 });
+    const closeTrend = statusChart.slice(-3).map(m =>
+      `${m.name} ปิด ${m["ปิดผู้ผลิต"]} เคส`).join(", ");
+    return [
+      "สรุปแนวโน้ม Executive Summary",
+      `ยอดปิด Complaint สะสม ${totalClosed.toLocaleString()} เคส ยังเปิดอยู่ ${totalOpen.toLocaleString()} เคส ปิดเป็น RD ${totalRd.toLocaleString()} เคส`,
+      `เดือนที่พบ Complaint สูงสุดคือ ${peakMonth.name} จำนวน ${peakMonth.total.toLocaleString()} เคส`,
+      topCatMonth.name ? `และในหมวดหมู่ ${topCatMonth.name} มีปริมาณสูงสุด ${topCatMonth.total.toLocaleString()} เคส` : "",
+      `แนวโน้มการปิดเคส 3 เดือนล่าสุด: ${closeTrend}`,
+      `ข้อสังเกต: หากยอดเปิดสูงขึ้นต่อเนื่อง ควรทบทวนกระบวนการปิดเคสและเพิ่มทรัพยากร`,
+    ].filter(Boolean).join(" ... ");
+  };
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Quick summary */}
@@ -73,11 +95,15 @@ export default function TrendsTab({ data }: Props) {
       </div>
 
       <div className="chart-card">
-        <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(168,85,247,0.15)" }}>
-            <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
-          </span>
-          แนวโน้ม Complaint รายเดือน ตามหมวดหมู่ (Stacked)
+        <div className="flex items-center justify-between mb-4">
+          <div className="chart-title !mb-0">
+            <span className="chart-icon" style={{ background: "rgba(168,85,247,0.15)" }}>
+              <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
+            </span>
+            แนวโน้ม Complaint รายเดือน ตามหมวดหมู่ (Stacked)
+          </div>
+          <TTSButton status={ttsStatus} supported={supported}
+            onPlay={() => speak(buildScript())} onPause={pause} onCancel={cancel} />
         </div>
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={categoryStackData}>

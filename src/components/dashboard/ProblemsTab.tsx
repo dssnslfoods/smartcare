@@ -4,6 +4,8 @@ import {
 } from "recharts";
 import { AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
+import TTSButton from "./TTSButton";
+import { useTTS } from "@/hooks/useTTS";
 
 const COLORS = ["#ef4444", "#f59e0b", "#0ea5e9", "#8b5cf6", "#22c55e", "#06b6d4", "#f97316", "#ec4899"];
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#a855f7", "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"];
@@ -26,6 +28,8 @@ function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent
 }
 
 export default function ProblemsTab({ data }: Props) {
+  const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
+
   const problemData = Object.entries(data.problem_type).map(([name, value]) => ({ name, value }));
   const totalProblems = problemData.reduce((s, d) => s + d.value, 0);
   const closeRateData = Object.entries(data.close_rate_by_type).map(([name, v]) => ({
@@ -35,6 +39,31 @@ export default function ProblemsTab({ data }: Props) {
   const subProblemData = Object.entries(data.sub_problem).map(([name, value]) => ({
     name: name.length > 30 ? name.substring(0, 30) + "..." : name, value
   }));
+
+  const sortedClose = [...closeRateData].sort((a, b) => a.rate - b.rate);
+  const worstClose = sortedClose[0];
+  const bestClose  = sortedClose[sortedClose.length - 1];
+  const top3Sub    = subProblemData.slice(0, 3);
+
+  const buildScript = () => {
+    const top3ProbText = problemData.slice(0, 3).map((d, i) =>
+      `อันดับ ${i + 1} ${d.name} ${d.value.toLocaleString()} เคส คิดเป็น ${Math.round((d.value / totalProblems) * 100)} เปอร์เซ็นต์`
+    ).join(" ");
+    const closeText = worstClose
+      ? `ประเภทปัญหาที่ปิดเคสได้น้อยที่สุดคือ ${worstClose.name} อัตรา ${worstClose.rate} เปอร์เซ็นต์` : "";
+    const bestCloseText = bestClose && bestClose !== worstClose
+      ? ` ส่วนที่ดีที่สุดคือ ${bestClose.name} อัตรา ${bestClose.rate} เปอร์เซ็นต์` : "";
+    const subText = top3Sub.map((d, i) =>
+      `อันดับ ${i + 1} ${d.name} ${d.value.toLocaleString()} เคส`).join(" ");
+    return [
+      "สรุปประเภทปัญหา Executive Summary",
+      `มีประเภทปัญหาทั้งหมด ${problemData.length} ประเภท รวม ${totalProblems.toLocaleString()} เคส`,
+      top3ProbText,
+      `ด้านอัตราการปิดเคส: ${closeText}${bestCloseText}`,
+      `ปัญหาย่อยที่พบมากสุด 3 อันดับแรก: ${subText}`,
+      `ข้อแนะนำ: เร่งแก้ไขประเภทปัญหาที่มีอัตราปิดต่ำ และให้ความสำคัญกับการแก้ไขรากเหง้าของปัญหาย่อยอันดับหนึ่ง`,
+    ].join(" ... ");
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -103,11 +132,15 @@ export default function ProblemsTab({ data }: Props) {
       </div>
 
       <div className="chart-card">
-        <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(251,191,36,0.15)" }}>
-            <Search className="w-3.5 h-3.5 text-amber-400" />
-          </span>
-          Top 15 ประเภทปัญหาย่อย
+        <div className="flex items-center justify-between mb-4">
+          <div className="chart-title !mb-0">
+            <span className="chart-icon" style={{ background: "rgba(251,191,36,0.15)" }}>
+              <Search className="w-3.5 h-3.5 text-amber-400" />
+            </span>
+            Top 15 ประเภทปัญหาย่อย
+          </div>
+          <TTSButton status={ttsStatus} supported={supported}
+            onPlay={() => speak(buildScript())} onPause={pause} onCancel={cancel} />
         </div>
         <ResponsiveContainer width="100%" height={500}>
           <BarChart data={subProblemData} layout="vertical">

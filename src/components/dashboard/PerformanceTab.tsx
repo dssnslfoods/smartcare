@@ -3,6 +3,8 @@ import {
 } from "recharts";
 import { Timer, BarChart3, Target, Zap } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
+import TTSButton from "./TTSButton";
+import { useTTS } from "@/hooks/useTTS";
 
 const DIST_COLORS = ["#22c55e", "#4ade80", "#fbbf24", "#f59e0b", "#f97316", "#ef4444", "#dc2626"];
 
@@ -12,6 +14,7 @@ const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borde
 const SLA_TARGET_DAYS = 7;
 
 export default function PerformanceTab({ data }: Props) {
+  const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
   const distData = Object.entries(data.response_distribution).map(([name, value]) => ({ name, value }));
   const catData = Object.entries(data.response_by_category).map(([name, v]) => ({
     name, avg: v.avg, median: v.median, max: v.max
@@ -31,6 +34,22 @@ export default function PerformanceTab({ data }: Props) {
   const sortedCat = [...catData].sort((a, b) => a.avg - b.avg);
   const bestCat = sortedCat[0];
   const worstCat = sortedCat[sortedCat.length - 1];
+
+  const buildScript = () => {
+    const slaStatus = slaRate >= 80 ? "อยู่ในเกณฑ์ดี" : slaRate >= 60 ? "ต้องปรับปรุง" : "ต่ำกว่าเป้าหมายมาก ควรเร่งแก้ไข";
+    const gapDays = worstCat && bestCat ? (worstCat.avg - bestCat.avg).toFixed(1) : "0";
+    const catSummary = catData.slice(0, 3).map(c =>
+      `${c.name} เฉลี่ย ${c.avg} วัน`).join(", ");
+    return [
+      "สรุปประสิทธิภาพการตอบ Complaint Executive Summary",
+      `เวลาตอบกลับเฉลี่ย ${data.kpi.avg_response_days} วัน มัธยฐาน ${data.kpi.median_response_days} วัน`,
+      `SLA Compliance ภายใน ${SLA_TARGET_DAYS} วัน อยู่ที่ ${slaRate} เปอร์เซ็นต์ ${slaStatus}`,
+      bestCat ? `หมวดที่รวดเร็วที่สุดคือ ${bestCat.name} เฉลี่ย ${bestCat.avg} วัน` : "",
+      worstCat && worstCat !== bestCat ? `หมวดที่ช้าที่สุดคือ ${worstCat.name} เฉลี่ย ${worstCat.avg} วัน ห่างกัน ${gapDays} วัน` : "",
+      catSummary ? `สรุปเวลาเฉลี่ยตามหมวด: ${catSummary}` : "",
+      slaRate < 80 ? `ข้อแนะนำ: ปรับปรุงกระบวนการตอบสนอง โดยเฉพาะหมวด ${worstCat?.name || ""} เพื่อให้ผ่าน SLA 80 เปอร์เซ็นต์` : "ข้อแนะนำ: รักษาระดับ SLA และขยายผลแนวทางปฏิบัติของหมวดที่ดีที่สุด",
+    ].filter(Boolean).join(" ... ");
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -114,11 +133,15 @@ export default function PerformanceTab({ data }: Props) {
       {/* Performance Insights */}
       {worstCat && bestCat && (
         <div className="chart-card">
-          <div className="chart-title">
-            <span className="chart-icon" style={{ background: "rgba(139,92,246,0.15)" }}>
-              <Target className="w-3.5 h-3.5 text-violet-400" />
-            </span>
-            Performance Insights
+          <div className="flex items-center justify-between mb-4">
+            <div className="chart-title !mb-0">
+              <span className="chart-icon" style={{ background: "rgba(139,92,246,0.15)" }}>
+                <Target className="w-3.5 h-3.5 text-violet-400" />
+              </span>
+              Performance Insights
+            </div>
+            <TTSButton status={ttsStatus} supported={supported}
+              onPlay={() => speak(buildScript())} onPause={pause} onCancel={cancel} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="insight-box">

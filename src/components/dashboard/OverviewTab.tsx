@@ -5,6 +5,8 @@ import {
 import { AlertCircle, TrendingUp, Target, Lightbulb } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 import KpiCards from "./KpiCards";
+import TTSButton from "./TTSButton";
+import { useTTS } from "@/hooks/useTTS";
 
 const STATUS_COLORS: Record<string, string> = {
   "ปิดผู้ผลิต": "#22c55e",
@@ -34,6 +36,7 @@ function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent
 }
 
 export default function OverviewTab({ data }: Props) {
+  const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
   const statusData = Object.entries(data.status).map(([name, value]) => ({ name, value }));
   const categoryData = Object.entries(data.category).map(([name, value]) => ({ name, value }));
   const trendData = data.monthly_trend.map(m => ({
@@ -64,6 +67,26 @@ export default function OverviewTab({ data }: Props) {
   const worstCloseType = sortedCloseRates[0];
   const bestCloseType = sortedCloseRates[sortedCloseRates.length - 1];
   const topGroup = sortedGroups[0];
+
+  const buildScript = () => {
+    const trendLast = data.monthly_trend.slice(-3);
+    const trendText = trendLast.map(m => `${m.month.split("_")[1]} ${m.calls} เคส`).join(", ");
+    const top2Text = top2Prob ? ` และ ${top2Prob[0]} จำนวน ${top2Prob[1]} รายการ` : "";
+    const perfText = worstCloseType
+      ? `กลุ่ม ${worstCloseType[0]} ปิดเคสได้เพียง ${worstCloseType[1].rate} เปอร์เซ็นต์`
+      : `อัตราปิดเคสรวม ${data.kpi.close_rate} เปอร์เซ็นต์`;
+    const bestText = bestCloseType && bestCloseType !== worstCloseType
+      ? ` ส่วน ${bestCloseType[0]} ทำได้ดีที่สุด ${bestCloseType[1].rate} เปอร์เซ็นต์` : "";
+    return [
+      "สรุปภาพรวม Executive Summary",
+      `มีข้อร้องเรียนทั้งหมด ${data.kpi.total_records.toLocaleString()} รายการ อัตราปิดเคส ${data.kpi.close_rate} เปอร์เซ็นต์ ใช้เวลาเฉลี่ย ${data.kpi.avg_response_days} วัน`,
+      `ปัญหาหลักสูงสุดคือ ${top1Prob?.[0] || "ไม่ระบุ"} จำนวน ${top1Prob?.[1] || 0} รายการ${top2Text}`,
+      `ปัญหาย่อยที่พบมากสุดคือ ${top1Sub?.[0] || "ไม่ระบุ"} จำนวน ${top1Sub?.[1] || 0} ครั้ง`,
+      `ด้านประสิทธิภาพ: ${perfText}${bestText}`,
+      `กลุ่มสินค้าที่มี Complaint สูงสุดคือ ${topGroup?.[0] || "ไม่ระบุ"} จำนวน ${topGroup?.[1] || 0} รายการ`,
+      `แนวโน้ม 3 เดือนล่าสุด: ${trendText}`,
+    ].join(" ... ");
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -154,11 +177,15 @@ export default function OverviewTab({ data }: Props) {
 
       {/* Executive Summary */}
       <div className="chart-card">
-        <div className="chart-title">
-          <span className="chart-icon" style={{ background: "rgba(239,68,68,0.15)" }}>
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-          </span>
-          สรุปข้อค้นพบสำคัญ (Executive Summary)
+        <div className="flex items-center justify-between mb-4">
+          <div className="chart-title !mb-0">
+            <span className="chart-icon" style={{ background: "rgba(239,68,68,0.15)" }}>
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+            </span>
+            สรุปข้อค้นพบสำคัญ (Executive Summary)
+          </div>
+          <TTSButton status={ttsStatus} supported={supported}
+            onPlay={() => speak(buildScript())} onPause={pause} onCancel={cancel} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
