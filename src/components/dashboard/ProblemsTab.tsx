@@ -47,21 +47,21 @@ export default function ProblemsTab({ data }: Props) {
 
   const buildScript = () => {
     const top3ProbText = problemData.slice(0, 3).map((d, i) =>
-      `อันดับ ${i + 1} ${d.name} ${d.value.toLocaleString()} เคส คิดเป็น ${Math.round((d.value / totalProblems) * 100)} เปอร์เซ็นต์`
-    ).join(" ");
+      `Number ${i + 1}: ${d.name}, ${d.value.toLocaleString()} cases, ${Math.round((d.value / totalProblems) * 100)} percent`
+    ).join(". ");
     const closeText = worstClose
-      ? `ประเภทปัญหาที่ปิดเคสได้น้อยที่สุดคือ ${worstClose.name} อัตรา ${worstClose.rate} เปอร์เซ็นต์` : "";
+      ? `The problem type with the lowest closure rate is ${worstClose.name} at ${worstClose.rate} percent` : "";
     const bestCloseText = bestClose && bestClose !== worstClose
-      ? ` ส่วนที่ดีที่สุดคือ ${bestClose.name} อัตรา ${bestClose.rate} เปอร์เซ็นต์` : "";
+      ? `. The best performing type is ${bestClose.name} at ${bestClose.rate} percent` : "";
     const subText = top3Sub.map((d, i) =>
-      `อันดับ ${i + 1} ${d.name} ${d.value.toLocaleString()} เคส`).join(" ");
+      `Number ${i + 1}: ${d.name}, ${d.value.toLocaleString()} cases`).join(". ");
     return [
-      "สรุปประเภทปัญหา Executive Summary",
-      `มีประเภทปัญหาทั้งหมด ${problemData.length} ประเภท รวม ${totalProblems.toLocaleString()} เคส`,
-      top3ProbText,
-      `ด้านอัตราการปิดเคส: ${closeText}${bestCloseText}`,
-      `ปัญหาย่อยที่พบมากสุด 3 อันดับแรก: ${subText}`,
-      `ข้อแนะนำ: เร่งแก้ไขประเภทปัญหาที่มีอัตราปิดต่ำ และให้ความสำคัญกับการแก้ไขรากเหง้าของปัญหาย่อยอันดับหนึ่ง`,
+      "Problem Types Executive Summary.",
+      `There are ${problemData.length} problem types totalling ${totalProblems.toLocaleString()} cases.`,
+      `Top three: ${top3ProbText}.`,
+      `Closure rates: ${closeText}${bestCloseText}.`,
+      `Top three sub-problems: ${subText}.`,
+      `Recommendation: Prioritise improving closure rates for low-performing categories and address root causes of the top sub-problem.`,
     ].join(" ... ");
   };
 

@@ -70,21 +70,21 @@ export default function OverviewTab({ data }: Props) {
 
   const buildScript = () => {
     const trendLast = data.monthly_trend.slice(-3);
-    const trendText = trendLast.map(m => `${m.month.split("_")[1]} ${m.calls} เคส`).join(", ");
-    const top2Text = top2Prob ? ` และ ${top2Prob[0]} จำนวน ${top2Prob[1]} รายการ` : "";
+    const trendText = trendLast.map(m => `${m.month.split("_")[1]}: ${m.calls} cases`).join(", ");
+    const top2Text = top2Prob ? ` and ${top2Prob[0]} with ${top2Prob[1].toLocaleString()} cases` : "";
     const perfText = worstCloseType
-      ? `กลุ่ม ${worstCloseType[0]} ปิดเคสได้เพียง ${worstCloseType[1].rate} เปอร์เซ็นต์`
-      : `อัตราปิดเคสรวม ${data.kpi.close_rate} เปอร์เซ็นต์`;
+      ? `The ${worstCloseType[0]} category has the lowest closure rate at only ${worstCloseType[1].rate} percent`
+      : `Overall closure rate is ${data.kpi.close_rate} percent`;
     const bestText = bestCloseType && bestCloseType !== worstCloseType
-      ? ` ส่วน ${bestCloseType[0]} ทำได้ดีที่สุด ${bestCloseType[1].rate} เปอร์เซ็นต์` : "";
+      ? `. ${bestCloseType[0]} leads with the highest rate at ${bestCloseType[1].rate} percent` : "";
     return [
-      "สรุปภาพรวม Executive Summary",
-      `มีข้อร้องเรียนทั้งหมด ${data.kpi.total_records.toLocaleString()} รายการ อัตราปิดเคส ${data.kpi.close_rate} เปอร์เซ็นต์ ใช้เวลาเฉลี่ย ${data.kpi.avg_response_days} วัน`,
-      `ปัญหาหลักสูงสุดคือ ${top1Prob?.[0] || "ไม่ระบุ"} จำนวน ${top1Prob?.[1] || 0} รายการ${top2Text}`,
-      `ปัญหาย่อยที่พบมากสุดคือ ${top1Sub?.[0] || "ไม่ระบุ"} จำนวน ${top1Sub?.[1] || 0} ครั้ง`,
-      `ด้านประสิทธิภาพ: ${perfText}${bestText}`,
-      `กลุ่มสินค้าที่มี Complaint สูงสุดคือ ${topGroup?.[0] || "ไม่ระบุ"} จำนวน ${topGroup?.[1] || 0} รายการ`,
-      `แนวโน้ม 3 เดือนล่าสุด: ${trendText}`,
+      "Overview Executive Summary.",
+      `Total complaints recorded: ${data.kpi.total_records.toLocaleString()}. Closure rate: ${data.kpi.close_rate} percent. Average response time: ${data.kpi.avg_response_days} days.`,
+      `The top problem category is ${top1Prob?.[0] || "unspecified"} with ${(top1Prob?.[1] || 0).toLocaleString()} cases${top2Text}.`,
+      `The most frequent sub-problem is ${top1Sub?.[0] || "unspecified"} occurring ${(top1Sub?.[1] || 0).toLocaleString()} times.`,
+      `Performance insight: ${perfText}${bestText}.`,
+      `The product group with the highest complaints is ${topGroup?.[0] || "unspecified"} with ${(topGroup?.[1] || 0).toLocaleString()} cases.`,
+      `Three-month trend: ${trendText}.`,
     ].join(" ... ");
   };
 

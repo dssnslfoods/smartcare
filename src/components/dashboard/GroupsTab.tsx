@@ -75,22 +75,22 @@ export default function GroupsTab({ data }: Props) {
 
   const buildScript = () => {
     const top3Groups = groupData.slice(0, 3).map((g, i) =>
-      `อันดับ ${i + 1} ${g.name} จำนวน ${g.value.toLocaleString()} เคส`).join(" ");
+      `Number ${i + 1}: ${g.name} with ${g.value.toLocaleString()} cases`).join(". ");
     const top3Callers = callerData.slice(0, 3).map((c, i) =>
-      `อันดับ ${i + 1} ${c.name} จำนวน ${c.value.toLocaleString()} เคส`).join(" ");
+      `Number ${i + 1}: ${c.name} with ${c.value.toLocaleString()} cases`).join(". ");
     const topHeat = matrix.length > 0
       ? (() => {
           const sorted = [...matrix].sort((a, b) => b.count - a.count);
           const top = sorted[0];
-          return top ? `จุดเสี่ยงสูงสุดใน Heatmap คือกลุ่ม ${top.group} ปัญหา ${top.problem} จำนวน ${top.count.toLocaleString()} เคส` : "";
+          return top ? `The highest-risk hotspot in the heatmap is product group ${top.group} combined with problem type ${top.problem}, totalling ${top.count.toLocaleString()} cases.` : "";
         })()
       : "";
     return [
-      "สรุปกลุ่มสินค้า Executive Summary",
-      `มีกลุ่มสินค้าทั้งหมด ${groupData.length} กลุ่ม กลุ่มที่พบ Complaint สูงสุด: ${top3Groups}`,
-      `ช่องทางการแจ้งปัญหาหลัก: ${top3Callers}`,
+      "Product Groups Executive Summary.",
+      `There are ${groupData.length} product groups in total. Top three by complaint volume: ${top3Groups}.`,
+      `Primary complaint channels: ${top3Callers}.`,
       topHeat,
-      `ข้อแนะนำ: เฝ้าระวังกลุ่มสินค้าที่มียอดสูงสุด และตรวจสอบจุดเสี่ยงใน Heatmap เพื่อวางแผนป้องกันเชิงรุก`,
+      `Recommendation: Monitor the highest-volume product groups closely and investigate heatmap hotspots for proactive quality intervention.`,
     ].filter(Boolean).join(" ... ");
   };
 

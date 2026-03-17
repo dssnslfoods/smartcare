@@ -52,27 +52,27 @@ export default function DeepAnalysisTab({ data }: Props) {
   // Build TTS script from live data
   const buildScript = () => {
     const top3Text = top3.length >= 3
-      ? `ปัญหาอันดับหนึ่ง ${top3[0][0]} จำนวน ${top3[0][1]} เคส อันดับสอง ${top3[1][0]} จำนวน ${top3[1][1]} เคส อันดับสาม ${top3[2][0]} จำนวน ${top3[2][1]} เคส รวมกันคิดเป็น ${top3Pct} เปอร์เซ็นต์`
+      ? `Number one: ${top3[0][0]} with ${top3[0][1].toLocaleString()} cases. Number two: ${top3[1][0]} with ${top3[1][1].toLocaleString()} cases. Number three: ${top3[2][0]} with ${top3[2][1].toLocaleString()} cases. Together they account for ${top3Pct} percent.`
       : "";
     const riskText = sortedProblems.slice(0, 3).map(p => {
       const closeInfo = data.close_rate_by_type[p[0]];
       const rate = closeInfo?.rate || 0;
-      const risk = rate < 30 ? "สูง" : rate < 60 ? "กลาง" : "ต่ำ";
-      return `${p[0]} มีความเสี่ยง${risk} อัตราปิดเคส ${rate} เปอร์เซ็นต์`;
-    }).join(" ");
+      const risk = rate < 30 ? "high" : rate < 60 ? "medium" : "low";
+      return `${p[0]}: ${risk} risk, closure rate ${rate} percent`;
+    }).join(". ");
     const worstText = worstClose
-      ? `หมวดที่มีประสิทธิภาพต่ำสุดคือ ${worstClose[0]} ปิดเคสได้เพียง ${worstClose[1].rate} เปอร์เซ็นต์`
+      ? `The lowest-performing category is ${worstClose[0]} with a closure rate of only ${worstClose[1].rate} percent.`
       : "";
     const bestText = bestClose && bestClose !== worstClose
-      ? `ส่วน ${bestClose[0]} มีประสิทธิภาพสูงสุด ${bestClose[1].rate} เปอร์เซ็นต์`
+      ? `${bestClose[0]} leads with the highest performance at ${bestClose[1].rate} percent.`
       : "";
 
     return [
-      "สรุปการวิเคราะห์เชิงลึก",
-      `Pareto Analysis: มีเพียง ${items80} จาก ${spEntries.length} ประเภทย่อย ครอบคลุม 80 เปอร์เซ็นต์ของ Complaint ทั้งหมด ${top3Text}`,
-      `Risk Assessment: ${riskText}`,
-      `Performance Gaps: ${worstText} ${bestText} ระยะเวลาเฉลี่ย ${data.kpi.avg_response_days} วัน`,
-      "ข้อเสนอแนะ: หนึ่ง เร่งด่วน เพิ่มประสิทธิภาพปิดเคสในหมวดที่มีอัตราต่ำ สอง ระยะสั้น แก้ไขปัญหาย่อย 3 อันดับแรก สาม ระยะกลาง ปรับปรุงคิวซีในกลุ่มที่มี Complaint สูง สี่ ระยะยาว สร้างระบบ Early Warning ติดตาม real time",
+      "Deep Analysis Executive Summary.",
+      `Pareto Analysis: only ${items80} out of ${spEntries.length} sub-types account for eighty percent of all complaints. ${top3Text}`,
+      `Risk Assessment: ${riskText}.`,
+      `Performance Gaps: ${worstText} ${bestText} Average resolution time: ${data.kpi.avg_response_days} days.`,
+      "Recommendations: First — urgent: improve closure rates in low-performing categories. Second — short-term: resolve the top three sub-problems. Third — medium-term: strengthen quality control in high-complaint groups. Fourth — long-term: build an early warning system for real-time monitoring.",
     ].join(" ... ");
   };
 

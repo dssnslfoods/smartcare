@@ -36,18 +36,18 @@ export default function PerformanceTab({ data }: Props) {
   const worstCat = sortedCat[sortedCat.length - 1];
 
   const buildScript = () => {
-    const slaStatus = slaRate >= 80 ? "อยู่ในเกณฑ์ดี" : slaRate >= 60 ? "ต้องปรับปรุง" : "ต่ำกว่าเป้าหมายมาก ควรเร่งแก้ไข";
+    const slaStatus = slaRate >= 80 ? "meeting the target — well done" : slaRate >= 60 ? "below target and requires improvement" : "significantly below target and needs urgent attention";
     const gapDays = worstCat && bestCat ? (worstCat.avg - bestCat.avg).toFixed(1) : "0";
     const catSummary = catData.slice(0, 3).map(c =>
-      `${c.name} เฉลี่ย ${c.avg} วัน`).join(", ");
+      `${c.name}: ${c.avg} days average`).join(", ");
     return [
-      "สรุปประสิทธิภาพการตอบ Complaint Executive Summary",
-      `เวลาตอบกลับเฉลี่ย ${data.kpi.avg_response_days} วัน มัธยฐาน ${data.kpi.median_response_days} วัน`,
-      `SLA Compliance ภายใน ${SLA_TARGET_DAYS} วัน อยู่ที่ ${slaRate} เปอร์เซ็นต์ ${slaStatus}`,
-      bestCat ? `หมวดที่รวดเร็วที่สุดคือ ${bestCat.name} เฉลี่ย ${bestCat.avg} วัน` : "",
-      worstCat && worstCat !== bestCat ? `หมวดที่ช้าที่สุดคือ ${worstCat.name} เฉลี่ย ${worstCat.avg} วัน ห่างกัน ${gapDays} วัน` : "",
-      catSummary ? `สรุปเวลาเฉลี่ยตามหมวด: ${catSummary}` : "",
-      slaRate < 80 ? `ข้อแนะนำ: ปรับปรุงกระบวนการตอบสนอง โดยเฉพาะหมวด ${worstCat?.name || ""} เพื่อให้ผ่าน SLA 80 เปอร์เซ็นต์` : "ข้อแนะนำ: รักษาระดับ SLA และขยายผลแนวทางปฏิบัติของหมวดที่ดีที่สุด",
+      "Response Performance Executive Summary.",
+      `Average response time: ${data.kpi.avg_response_days} days. Median: ${data.kpi.median_response_days} days.`,
+      `SLA compliance within ${SLA_TARGET_DAYS} days stands at ${slaRate} percent, ${slaStatus}.`,
+      bestCat ? `The fastest responding category is ${bestCat.name} averaging ${bestCat.avg} days.` : "",
+      worstCat && worstCat !== bestCat ? `The slowest is ${worstCat.name} averaging ${worstCat.avg} days, a gap of ${gapDays} days.` : "",
+      catSummary ? `Category averages: ${catSummary}.` : "",
+      slaRate < 80 ? `Recommendation: Improve response processes, particularly for ${worstCat?.name || "underperforming categories"}, to achieve the eighty percent SLA target.` : "Recommendation: Maintain the current SLA level and replicate best practices from the top-performing category.",
     ].filter(Boolean).join(" ... ");
   };
 

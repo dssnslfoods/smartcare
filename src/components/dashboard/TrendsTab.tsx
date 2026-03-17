@@ -61,14 +61,14 @@ export default function TrendsTab({ data }: Props) {
       return t > best.total ? { name: m.name, total: t } : best;
     }, { name: "", total: 0 });
     const closeTrend = statusChart.slice(-3).map(m =>
-      `${m.name} ปิด ${m["ปิดผู้ผลิต"]} เคส`).join(", ");
+      `${m.name}: ${m["ปิดผู้ผลิต"]} closed`).join(", ");
     return [
-      "สรุปแนวโน้ม Executive Summary",
-      `ยอดปิด Complaint สะสม ${totalClosed.toLocaleString()} เคส ยังเปิดอยู่ ${totalOpen.toLocaleString()} เคส ปิดเป็น RD ${totalRd.toLocaleString()} เคส`,
-      `เดือนที่พบ Complaint สูงสุดคือ ${peakMonth.name} จำนวน ${peakMonth.total.toLocaleString()} เคส`,
-      topCatMonth.name ? `และในหมวดหมู่ ${topCatMonth.name} มีปริมาณสูงสุด ${topCatMonth.total.toLocaleString()} เคส` : "",
-      `แนวโน้มการปิดเคส 3 เดือนล่าสุด: ${closeTrend}`,
-      `ข้อสังเกต: หากยอดเปิดสูงขึ้นต่อเนื่อง ควรทบทวนกระบวนการปิดเคสและเพิ่มทรัพยากร`,
+      "Trends Executive Summary.",
+      `Total closed complaints: ${totalClosed.toLocaleString()}. Still open: ${totalOpen.toLocaleString()}. Closed as R and D: ${totalRd.toLocaleString()}.`,
+      `The peak month for complaints was ${peakMonth.name} with ${peakMonth.total.toLocaleString()} cases.`,
+      topCatMonth.name ? `The highest-volume category month was ${topCatMonth.name} with ${topCatMonth.total.toLocaleString()} cases.` : "",
+      `Closure trend over the last three months: ${closeTrend}.`,
+      `Observation: If open cases continue to rise, the closure process should be reviewed and additional resources allocated.`,
     ].filter(Boolean).join(" ... ");
   };
 

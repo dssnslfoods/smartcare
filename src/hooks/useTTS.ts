@@ -25,14 +25,16 @@ export function useTTS() {
     // Fresh start
     ss.cancel();
     const utt = new SpeechSynthesisUtterance(text);
-    utt.lang  = "th-TH";
-    utt.rate  = 0.95;
+    utt.lang  = "en-GB";
+    utt.rate  = 0.92;
     utt.pitch = 1;
     const voices = ss.getVoices();
-    const thVoice =
-      voices.find(v => v.lang.startsWith("th")) ??
+    const gbVoice =
+      voices.find(v => v.lang === "en-GB" && /female|woman|serena|daniel|kate/i.test(v.name)) ??
+      voices.find(v => v.lang === "en-GB") ??
+      voices.find(v => v.lang.startsWith("en-GB")) ??
       voices.find(v => v.lang.startsWith("en"));
-    if (thVoice) utt.voice = thVoice;
+    if (gbVoice) utt.voice = gbVoice;
     utt.onstart  = () => setStatus("playing");
     utt.onend    = () => setStatus("idle");
     utt.onerror  = () => setStatus("idle");
