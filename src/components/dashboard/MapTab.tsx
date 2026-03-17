@@ -289,6 +289,8 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
               </defs>
 
               <ZoomableGroup center={[101, 13]} zoom={1} minZoom={0.7} maxZoom={5}>
+                {/* Use raw <path> elements so SVG fill attribute is applied directly,
+                    bypassing any CSS inheritance issues with Geography style prop */}
                 <Geographies geography={GEO_URL}>
                   {({ geographies }) =>
                     geographies.map(geo => {
@@ -297,31 +299,18 @@ export default function MapTab({ companyId, branchId, status, category, dateFrom
                       const isHL = highlightedProvinces.has(provName);
                       const regionColor = region ? REGION_COLORS[region] : null;
 
-                      // CDC-province: bright sky blue overlaid on region color
-                      const defaultFill  = isHL ? "rgba(14,165,233,0.72)"  : (regionColor?.fill   ?? "rgba(148,163,184,0.18)");
-                      const hoverFill    = isHL ? "rgba(14,165,233,0.88)"  : (regionColor?.hover  ?? "rgba(148,163,184,0.32)");
-                      const defaultStroke = isHL ? "rgba(56,189,248,0.95)" : (regionColor?.stroke ?? "rgba(148,163,184,0.40)");
-                      const hoverStroke   = isHL ? "rgba(56,189,248,1.0)"  : (regionColor?.stroke ?? "rgba(148,163,184,0.65)");
+                      const fill   = isHL ? "rgba(14,165,233,0.72)"  : (regionColor?.fill   ?? "rgba(100,116,139,0.22)");
+                      const stroke = isHL ? "rgba(56,189,248,0.90)"  : (regionColor?.stroke ?? "rgba(100,116,139,0.45)");
+                      const sw     = isHL ? 0.9 : 0.45;
 
                       return (
-                        <Geography
+                        <path
                           key={geo.rsmKey}
-                          geography={geo}
-                          style={{
-                            default: {
-                              fill: defaultFill,
-                              stroke: defaultStroke,
-                              strokeWidth: isHL ? 0.8 : 0.4,
-                              outline: "none",
-                            },
-                            hover: {
-                              fill: hoverFill,
-                              stroke: hoverStroke,
-                              strokeWidth: isHL ? 1.0 : 0.55,
-                              outline: "none",
-                            },
-                            pressed: { outline: "none" },
-                          }}
+                          d={geo.svgPath}
+                          fill={fill}
+                          stroke={stroke}
+                          strokeWidth={sw}
+                          style={{ outline: "none", cursor: "default", transition: "fill 0.15s" }}
                         />
                       );
                     })
