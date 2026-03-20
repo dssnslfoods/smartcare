@@ -130,41 +130,6 @@ export default function ComplaintForm() {
       }
     }
 
-    // Initialize speech recognition
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "th-TH";
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      recognition.onstart = () => setIsListening(true);
-      recognition.onend = () => setIsListening(false);
-
-      recognition.onresult = (event: any) => {
-        let interimTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            setForm(prev => {
-              if (listeningField === "resolution") {
-                return { ...prev, resolution: (prev.resolution + " " + transcript).trim() };
-              }
-              return { ...prev, description: (prev.description + " " + transcript).trim() };
-            });
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        toast.error(`ข้อผิดพลาด: ${event.error}`);
-      };
-
-      recognitionRef.current = recognition;
-    }
-
     fetchLookups();
     fetchRecent();
   }, []);
@@ -197,16 +162,76 @@ export default function ComplaintForm() {
   }
 
   function toggleMic(field: "description" | "resolution") {
-    if (!recognitionRef.current) {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       toast.error("ไม่รองรับเสียงในเบราว์เซอร์นี้");
       return;
     }
+
+    // กดซ้ำช่องเดิม → หยุดฟัง
     if (isListening && listeningField === field) {
-      recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null; // ถอด handler ก่อน stop เพื่อป้องกัน reset ซ้อน
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+      setIsListening(false);
       setListeningField(null);
-    } else {
-      setListeningField(field);
-      recognitionRef.current.start();
+      return;
+    }
+
+    // หยุด recognition เก่า (ถ้ามี) โดยไม่ให้ onend ไปรีเซ็ต state ใหม่
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    // สร้าง instance ใหม่ทุกครั้ง — `field` ถูก capture ใน closure ของ onresult โดยตรง
+    const recognition = new SpeechRecognition();
+    recognition.lang = "th-TH";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setListeningField(null);
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+    };
+
+    recognition.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          const transcript = event.results[i][0].transcript;
+          // field ถูก capture ตอน toggleMic ถูกเรียก — ถูกเสมอ 100%
+          setForm(prev => {
+            if (field === "resolution") {
+              return { ...prev, resolution: (prev.resolution + " " + transcript).trim() };
+            }
+            return { ...prev, description: (prev.description + " " + transcript).trim() };
+          });
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error !== "aborted") {
+        toast.error(`ข้อผิดพลาด: ${event.error}`);
+      }
+    };
+
+    recognitionRef.current = recognition;
+    setListeningField(field);
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Recognition start error:", e);
+      toast.error("ไม่สามารถเริ่มฟังได้ กรุณาลองใหม่");
+      recognitionRef.current = null;
+      setListeningField(null);
     }
   }
 
