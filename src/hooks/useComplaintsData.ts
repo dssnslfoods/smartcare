@@ -71,7 +71,7 @@ function buildCompanyData(
   const statusMap = countMap(statusArr);
 
   const closed = statusMap["ปิดผู้ผลิต"] || 0;
-  const not_closed = statusMap["ไม่ปิดผู้ผลิต"] || 0;
+  const not_closed = complaints.filter(c => !c.resolved_at).length;
   const close_rate = (closed + not_closed) > 0 ? Math.round((closed / (closed + not_closed)) * 1000) / 10 : 0;
 
   // Response days
@@ -197,20 +197,24 @@ function buildCompanyData(
   });
 
   // Monthly category
-  const mcMap: Record<string, { recall: number; foodSafety: number; foodQuality: number; foodLaw: number; foodService: number }> = {};
   const shortMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dynamicCategories = [...new Set(complaints.map(c => c.categories?.name).filter(Boolean) as string[])];
+  const mcMap: Record<string, Record<string, number>> = {};
+  
   complaints.forEach(c => {
     if (!c.complaint_date) return;
     const d = new Date(c.complaint_date);
     const key = shortMonths[d.getMonth()];
-    if (!mcMap[key]) mcMap[key] = { recall: 0, foodSafety: 0, foodQuality: 0, foodLaw: 0, foodService: 0 };
-    const cat = c.categories?.name || "";
-    if (cat.includes("Recall")) mcMap[key].recall++;
-    else if (cat.includes("Safety")) mcMap[key].foodSafety++;
-    else if (cat.includes("Quality")) mcMap[key].foodQuality++;
-    else if (cat.includes("Law")) mcMap[key].foodLaw++;
-    else if (cat.includes("Service")) mcMap[key].foodService++;
+    if (!mcMap[key]) {
+      mcMap[key] = {};
+      dynamicCategories.forEach(cat => mcMap[key][cat] = 0);
+    }
+    const cat = c.categories?.name;
+    if (cat && mcMap[key][cat] !== undefined) {
+      mcMap[key][cat]++;
+    }
   });
+
   const monthly_category = shortMonths
     .filter(m => mcMap[m])
     .map(m => ({ month: m, ...mcMap[m] }));
@@ -233,6 +237,7 @@ function buildCompanyData(
     group_problem_matrix,
     monthly_status,
     monthly_category,
+    raw_complaints: complaints,
   };
 }
 

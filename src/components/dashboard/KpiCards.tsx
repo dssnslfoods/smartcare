@@ -71,8 +71,8 @@ export default function KpiCards({ data, categoryGroups }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {Object.entries(categoryGroups).map(([name, count]) => (
           <div key={name} className="kpi-card group text-center py-4">
-            <div className={`w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center text-xs font-bold ${CATEGORY_ICONS[name] || "bg-slate-500/20 text-slate-400"}`}>
-              {count}
+            <div className={`w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center text-xs font-bold ${CATEGORY_ICONS[name] || ["bg-sky-500/20 text-sky-400", "bg-emerald-500/20 text-emerald-400", "bg-amber-500/20 text-amber-400", "bg-purple-500/20 text-purple-400", "bg-red-500/20 text-red-400"][Object.keys(categoryGroups).indexOf(name) % 5]}`}>
+              {name.slice(0, 2).toUpperCase()}
             </div>
             <div className="kpi-value text-xl">{count.toLocaleString()}</div>
             <div className="kpi-label text-[11px] leading-tight">{name}</div>
@@ -105,9 +105,7 @@ export default function KpiCards({ data, categoryGroups }: Props) {
             <div className="kpi-icon-badge bg-emerald-500/15">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-right">
-              <div className="text-[10px] text-emerald-400/60 font-medium">TARGET 85%</div>
-            </div>
+
           </div>
           <div className="kpi-value text-kpi-green text-3xl">
             <AnimatedNumber value={kpi.close_rate} suffix="%" decimals={1} />

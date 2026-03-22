@@ -13,6 +13,7 @@ import Login from "./pages/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import UserManagement from "./pages/UserManagement.tsx";
 import RolePermissions from "./pages/RolePermissions.tsx";
+import CloseCaseAdjust from "./pages/CloseCaseAdjust.tsx";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/permissions" element={<ProtectedRoute resource="role_permissions"><RolePermissions /></ProtectedRoute>} />
             <Route path="/complaints" element={<ProtectedRoute resource="complaint_list"><ComplaintList /></ProtectedRoute>} />
             <Route path="/complaints/new" element={<ProtectedRoute resource="complaint_form"><ComplaintForm /></ProtectedRoute>} />
+            <Route path="/close-case-adjust" element={<ProtectedRoute resource="close_case_adjust"><CloseCaseAdjust /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

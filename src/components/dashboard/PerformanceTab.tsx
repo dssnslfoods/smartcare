@@ -5,6 +5,27 @@ import { Timer, BarChart3, Target, Zap } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 import TTSButton from "./TTSButton";
 import { useTTS } from "@/hooks/useTTS";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+function diffDays(d1: string | null, d2: string | null): number | null {
+  if (!d1 || !d2) return null;
+  const a = new Date(d1).getTime();
+  const b = new Date(d2).getTime();
+  if (isNaN(a) || isNaN(b)) return null;
+  return Math.abs(b - a) / (1000 * 60 * 60 * 24);
+}
+
+function getBucket(days: number): string {
+  if (days <= 1) return "0-1วัน";
+  if (days <= 3) return "2-3วัน";
+  if (days <= 5) return "4-5วัน";
+  if (days <= 7) return "6-7วัน";
+  if (days <= 14) return "8-14วัน";
+  if (days <= 30) return "15-30วัน";
+  return "30+วัน";
+}
 
 const DIST_COLORS = ["#22c55e", "#4ade80", "#fbbf24", "#f59e0b", "#f97316", "#ef4444", "#dc2626"];
 
@@ -15,10 +36,18 @@ const SLA_TARGET_DAYS = 7;
 
 export default function PerformanceTab({ data }: Props) {
   const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
+  const [openBucket, setOpenBucket] = useState<string | null>(null);
+
   const distData = Object.entries(data.response_distribution).map(([name, value]) => ({ name, value }));
   const catData = Object.entries(data.response_by_category).map(([name, v]) => ({
     name, avg: v.avg, median: v.median, max: v.max
   }));
+
+  const selectedComplaints = openBucket ? (data.raw_complaints || []).filter((c: any) => {
+    const d = diffDays(c.complaint_date, c.resolved_at);
+    if (d === null) return false;
+    return getBucket(d) === openBucket;
+  }) : [];
 
   // SLA compliance calculation
   const withinSLA = distData
@@ -101,7 +130,13 @@ export default function PerformanceTab({ data }: Props) {
               <XAxis dataKey="name" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" name="จำนวนเคส" radius={[6, 6, 0, 0]}>
+              <Bar 
+                dataKey="value" 
+                name="จำนวนเคส" 
+                radius={[6, 6, 0, 0]} 
+                onClick={(item) => setOpenBucket(item.name || item.payload?.name)} 
+                cursor="pointer"
+              >
                 {distData.map((_, i) => <Cell key={i} fill={DIST_COLORS[i % DIST_COLORS.length]} />)}
               </Bar>
             </BarChart>
@@ -164,6 +199,50 @@ export default function PerformanceTab({ data }: Props) {
           </div>
         </div>
       )}
+
+      {/* Detail Dialog */}
+      <Dialog open={!!openBucket} onOpenChange={(o) => !o && setOpenBucket(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>รายการ Complaint (ใช้เวลาแก้ {openBucket})</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto mt-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>เลขที่</TableHead>
+                  <TableHead>วันที่แจ้ง</TableHead>
+                  <TableHead>หมวดหมู่</TableHead>
+                  <TableHead>ปัญหา</TableHead>
+                  <TableHead>บริษัท/สาขา</TableHead>
+                  <TableHead>สถานะ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedComplaints.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">ไม่มีข้อมูล</TableCell>
+                  </TableRow>
+                ) : selectedComplaints.map((c: any) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium text-xs">{c.complaint_number}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {c.complaint_date ? new Date(c.complaint_date).toLocaleDateString("th-TH") : "-"}
+                    </TableCell>
+                    <TableCell className="text-xs">{c.categories?.name || "-"}</TableCell>
+                    <TableCell className="text-xs">{c.problem_types?.name || "-"}</TableCell>
+                    <TableCell className="text-xs">
+                      {c.companies?.name}<br/>
+                      <span className="text-muted-foreground">{c.branches?.name}</span>
+                    </TableCell>
+                    <TableCell className="text-xs">{c.status || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

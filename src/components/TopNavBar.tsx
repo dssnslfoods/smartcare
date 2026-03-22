@@ -1,15 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, List, ClipboardPlus, Database, LogOut, Users, ShieldCheck } from "lucide-react";
+import { BarChart3, List, ClipboardPlus, Database, LogOut, Users, ShieldCheck, CalendarCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/logo.png";
-import { useAuth, Resource } from "@/contexts/AuthContext";
+import { useAuth, Resource, AppRole } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const NAV_ITEMS: { path: string; label: string; icon: any; resource?: Resource }[] = [
+const NAV_ITEMS: { path: string; label: string; icon: any; resource?: Resource; roles?: AppRole[] }[] = [
   { path: "/", label: "Dashboard", icon: BarChart3, resource: "dashboard" },
   { path: "/complaints", label: "รายการ Complaint", icon: List, resource: "complaint_list" },
   { path: "/complaints/new", label: "บันทึกใหม่", icon: ClipboardPlus, resource: "complaint_form" },
+  { path: "/close-case-adjust", label: "ปรับปรุงปิดเคส", icon: CalendarCheck, resource: "close_case_adjust" },
   { path: "/master-data", label: "Master Data", icon: Database, resource: "master_data" },
   { path: "/users", label: "จัดการผู้ใช้", icon: Users, resource: "user_management" },
   { path: "/permissions", label: "กำหนดสิทธิ์", icon: ShieldCheck, resource: "role_permissions" },
@@ -27,6 +28,7 @@ export default function TopNavBar() {
   const { user, role, hasPermission, signOut } = useAuth();
 
   const visibleItems = NAV_ITEMS.filter(item => {
+    if (item.roles) return role !== null && item.roles.includes(role);
     if (!item.resource) return true;
     return hasPermission(item.resource);
   });

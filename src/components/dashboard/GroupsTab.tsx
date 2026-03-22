@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
-import { Factory, Users, Grid3X3 } from "lucide-react";
+import { Factory, Users, Grid3X3, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 import TTSButton from "./TTSButton";
 import { useTTS } from "@/hooks/useTTS";
@@ -56,7 +56,25 @@ function applyMatrixGrouping(
 export default function GroupsTab({ data }: Props) {
   const { status: ttsStatus, supported, speak, pause, cancel } = useTTS();
   const [groupCDC, setGroupCDC] = useState(false);
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const codeMap: Record<string, string> = (data as any).group_code_map || {};
+
+  function handleSort(col: string) {
+    if (sortCol === col) {
+      setSortDir(d => d === "desc" ? "asc" : "desc");
+    } else {
+      setSortCol(col);
+      setSortDir("desc");
+    }
+  }
+
+  function SortIcon({ col }: { col: string }) {
+    if (sortCol !== col) return <ChevronsUpDown className="inline w-3 h-3 ml-1 opacity-30" />;
+    return sortDir === "desc"
+      ? <ChevronDown className="inline w-3 h-3 ml-1 text-cyan-400" />
+      : <ChevronUp className="inline w-3 h-3 ml-1 text-cyan-400" />;
+  }
 
   const hasCDC = Object.values(codeMap).some(c => c.toUpperCase() === CDC_CODE);
 
@@ -185,25 +203,64 @@ export default function GroupsTab({ data }: Props) {
               return `rgba(239,68,68, ${0.6 + ((ratio-0.7)/0.3) * 0.4})`;
             };
 
+            // คำนวณ rowTotal ก่อนเพื่อใช้ sorting
+            const rowDataMap: Record<string, { totals: Record<string, number>; rowTotal: number }> = {};
+            for (const g of groups) {
+              const totals: Record<string, number> = {};
+              let rowTotal = 0;
+              for (const p of problems) {
+                const val = matrix.find(x => x.group === g && x.problem === p)?.count || 0;
+                totals[p] = val;
+                rowTotal += val;
+              }
+              rowDataMap[g] = { totals, rowTotal };
+            }
+
+            const sortedGroups = [...groups].sort((a, b) => {
+              let aVal: number | string;
+              let bVal: number | string;
+              if (sortCol === null || sortCol === "กลุ่ม") {
+                aVal = a; bVal = b;
+                return sortDir === "asc"
+                  ? String(aVal).localeCompare(String(bVal))
+                  : String(bVal).localeCompare(String(aVal));
+              } else if (sortCol === "รวม") {
+                aVal = rowDataMap[a].rowTotal;
+                bVal = rowDataMap[b].rowTotal;
+              } else {
+                aVal = rowDataMap[a].totals[sortCol] ?? 0;
+                bVal = rowDataMap[b].totals[sortCol] ?? 0;
+              }
+              return sortDir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+            });
+
+            const thStyle = "cursor-pointer select-none hover:text-cyan-300 transition-colors whitespace-nowrap";
+
             return (
               <table className="heatmap-table">
                 <thead>
                   <tr>
-                    <th className="text-left p-2">กลุ่ม</th>
-                    {problems.map(p => <th key={p}>{p}</th>)}
-                    <th>รวม</th>
+                    <th className={`text-left p-2 ${thStyle}`} onClick={() => handleSort("กลุ่ม")}>
+                      กลุ่ม <SortIcon col="กลุ่ม" />
+                    </th>
+                    {problems.map(p => (
+                      <th key={p} className={thStyle} onClick={() => handleSort(p)}>
+                        {p} <SortIcon col={p} />
+                      </th>
+                    ))}
+                    <th className={thStyle} onClick={() => handleSort("รวม")}>
+                      รวม <SortIcon col="รวม" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {groups.map(g => {
-                    let rowTotal = 0;
+                  {sortedGroups.map(g => {
+                    const { totals, rowTotal } = rowDataMap[g];
                     return (
                       <tr key={g}>
                         <td className={`text-left font-medium ${g === "CDC" ? "text-amber-400" : "text-foreground"}`}>{g}</td>
                         {problems.map(p => {
-                          const item = matrix.find(x => x.group === g && x.problem === p);
-                          const val = item?.count || 0;
-                          rowTotal += val;
+                          const val = totals[p];
                           const ratio = val / maxVal;
                           return (
                             <td key={p} style={{

@@ -63,6 +63,7 @@ export default function UserManagement() {
   const [formDepartment, setFormDepartment] = useState("");
   const [formCompanyId, setFormCompanyId] = useState("");
   const [formBranchId, setFormBranchId] = useState("");
+  const [formIsActive, setFormIsActive] = useState(true);
 
   const filteredBranches = allBranches.filter(b => b.company_id === formCompanyId);
 
@@ -95,6 +96,7 @@ export default function UserManagement() {
     setFormDepartment("");
     setFormCompanyId("");
     setFormBranchId("");
+    setFormIsActive(true);
   }
 
   function openCreate() {
@@ -112,6 +114,7 @@ export default function UserManagement() {
     setFormDepartment(u.department || "");
     setFormCompanyId(u.company_id || "");
     setFormBranchId(u.branch_id || "");
+    setFormIsActive(u.is_active === undefined ? true : u.is_active);
     setDialogOpen(true);
   }
 
@@ -129,6 +132,7 @@ export default function UserManagement() {
         department: formDepartment || null,
         company_id: formCompanyId || null,
         branch_id: formBranchId || null,
+        is_active: formIsActive,
       };
 
       if (editingUser) {
@@ -173,6 +177,7 @@ export default function UserManagement() {
             user_id: signUpData.user.id,
             email: formEmail,
             ...profileFields,
+            is_active: true, // Default to active for new users
           });
 
         if (roleError) {
@@ -251,6 +256,7 @@ export default function UserManagement() {
                       <TableHead className="font-semibold">แผนก</TableHead>
                       <TableHead className="font-semibold">บริษัท / สาขา</TableHead>
                       <TableHead className="font-semibold">บทบาท</TableHead>
+                      <TableHead className="font-semibold">สถานะ</TableHead>
                       <TableHead className="font-semibold text-right">จัดการ</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -283,6 +289,17 @@ export default function UserManagement() {
                               </Badge>
                             ) : (
                               <span className="text-muted-foreground text-sm">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {u.is_active !== false ? (
+                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                                ใช้งาน
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                                ปิดใช้งาน
+                              </Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -384,6 +401,26 @@ export default function UserManagement() {
                 </SelectContent>
               </Select>
             </div>
+
+            {editingUser && (
+              <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">สถานะผู้ใช้งาน</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {formIsActive ? "เปิดใช้งาน (สามารถเข้าระบบได้)" : "ปิดใช้งาน (ไม่สามารถเข้าระบบได้)"}
+                  </p>
+                </div>
+                <Button 
+                  type="button"
+                  variant={formIsActive ? "outline" : "destructive"} 
+                  size="sm"
+                  disabled={editingUser?.user_id === currentUser?.id}
+                  onClick={() => setFormIsActive(!formIsActive)}
+                >
+                  {formIsActive ? "ปิดการใช้งาน" : "เปิดการใช้งาน"}
+                </Button>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>ยกเลิก</Button>

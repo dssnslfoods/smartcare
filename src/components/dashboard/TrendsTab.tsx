@@ -1,20 +1,15 @@
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area
 } from "recharts";
-import { BarChart3, GitBranch } from "lucide-react";
+import { BarChart3, GitBranch, AlertTriangle } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 import TTSButton from "./TTSButton";
 import { useTTS } from "@/hooks/useTTS";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const CAT_COLORS: Record<string, string> = {
-  "Recall": "#a855f7",
-  "Complaint Food Safety": "#ef4444",
-  "Complaint Food Quality": "#0ea5e9",
-  "Complaint Food Law": "#fbbf24",
-  "Complaint Service": "#22c55e",
-};
+const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#a855f7"];
 
 interface Props { data: CompanyData }
 
@@ -33,31 +28,29 @@ export default function TrendsTab({ data }: Props) {
     return { name: label, "ปิดผู้ผลิต": closed, "ไม่ปิดผู้ผลิต": open, "ปิดเป็น RD": rd };
   });
 
-  const categoryStackData = data.monthly_category.map(d => ({
-    name: d.month,
-    "Recall": d.recall,
-    "Complaint Food Safety": d.foodSafety,
-    "Complaint Food Quality": d.foodQuality,
-    "Complaint Food Law": d.foodLaw,
-    "Complaint Service": d.foodService,
-  }));
+  const categoryStackData = data.monthly_category.map(d => {
+    const { month, ...categories } = d;
+    return { name: month, ...categories };
+  });
+
+  const availableCategories = categoryStackData.length > 0 
+    ? Object.keys(categoryStackData[0]).filter(k => k !== "name") 
+    : [];
 
   // Summary stats
   const totalClosed = statusChart.reduce((s, m) => s + m["ปิดผู้ผลิต"], 0);
   const totalOpen = statusChart.reduce((s, m) => s + m["ไม่ปิดผู้ผลิต"], 0);
   const totalRd = statusChart.reduce((s, m) => s + m["ปิดเป็น RD"], 0);
-  const peakMonth = categoryStackData.reduce((best, m) => {
-    const total = m["Recall"] + m["Complaint Food Safety"] + m["Complaint Food Quality"] + m["Complaint Food Law"] + m["Complaint Service"];
+  const peakMonth = categoryStackData.reduce<{name: string, total: number}>((best, m) => {
+    const total = Object.entries(m).reduce((sum, [k, v]) => k !== "name" ? sum + (v as number) : sum, 0);
     return total > best.total ? { name: m.name, total } : best;
   }, { name: "", total: 0 });
 
   const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
 
   const buildScript = () => {
-    const topCatMonth = categoryStackData.reduce((best, m) => {
-      const t = (m["Recall"] as number) + (m["Complaint Food Safety"] as number) +
-        (m["Complaint Food Quality"] as number) + (m["Complaint Food Law"] as number) +
-        (m["Complaint Service"] as number);
+    const topCatMonth = categoryStackData.reduce<{name: string, total: number}>((best, m) => {
+      const t = Object.entries(m).reduce((sum, [k, v]) => k !== "name" ? sum + (v as number) : sum, 0);
       return t > best.total ? { name: m.name, total: t } : best;
     }, { name: "", total: 0 });
     const closeTrend = statusChart.slice(-3).map(m =>
@@ -112,16 +105,50 @@ export default function TrendsTab({ data }: Props) {
             <YAxis stroke="#94a3b8" />
             <Tooltip contentStyle={tooltipStyle} />
             <Legend iconType="circle" iconSize={8} />
-            {Object.entries(CAT_COLORS).map(([key, color], i, arr) => (
+            {availableCategories.map((key, i, arr) => (
               <Bar
                 key={key}
                 dataKey={key}
                 stackId="cat"
-                fill={color}
+                fill={PALETTE[i % PALETTE.length]}
                 radius={i === arr.length - 1 ? [4, 4, 0, 0] : undefined}
               />
             ))}
           </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="chart-card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="chart-title !mb-0">
+            <span className="chart-icon" style={{ background: "rgba(239,68,68,0.15)" }}>
+              <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+            </span>
+            แนวโน้มการเรียกคืนสินค้า (Product Recall)
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={categoryStackData}>
+            <defs>
+              <linearGradient id="recallTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(217,19%,27%)" />
+            <XAxis dataKey="name" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Area 
+              type="monotone" 
+              dataKey="Recall" 
+              stroke="#ef4444" 
+              fill="url(#recallTrendGradient)" 
+              strokeWidth={2.5} 
+              dot={{ r: 3, fill: "#ef4444" }} 
+              activeDot={{ r: 5, stroke: "#ef4444", strokeWidth: 2, fill: "#fff" }} 
+            />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 

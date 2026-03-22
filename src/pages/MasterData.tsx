@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database,
   Building2, GitBranch, Package, Tag, AlertTriangle, List, Users,
-  Download, Plus, RefreshCw, FileUp, Pencil, Trash2, Save, X, Flag, Zap, Search,
+  Download, Plus, RefreshCw, FileUp, Pencil, Trash2, Save, X, Flag, Zap, Search, Microscope
 } from 'lucide-react';
 import TopNavBar from '@/components/TopNavBar';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ interface RefData {
 interface FormField {
   key: string;
   label: string;
-  type: 'text' | 'select';
+  type: 'text' | 'select' | 'checkbox' | 'number';
   required?: boolean;
   placeholder?: string;
   refKey?: keyof RefData;
@@ -57,6 +57,8 @@ interface TabConfig {
   importSampleRows: Record<string, string>[];
   toImportRows: (rows: Record<string, any>[], refs: RefData) => Record<string, any>[];
   upsertKey?: string; // column name for upsert conflict detection (e.g., 'code'), undefined = insert only
+  orderBy?: string;
+  orderAsc?: boolean;
 }
 
 // ─── Tab Configurations ───────────────────────────────────────────────────────
@@ -387,17 +389,23 @@ const TAB_CONFIGS: TabConfig[] = [
     formFields: [
       { key: 'name', label: 'ชื่อสถานะ', type: 'text', required: true, placeholder: 'กรอกชื่อสถานะ' },
       { key: 'code', label: 'รหัส', type: 'text', placeholder: 'เช่น closed_mfg' },
+      { key: 'sort_order', label: 'ลำดับ', type: 'number' },
+      { key: 'is_default', label: 'ค่าเริ่มต้น', type: 'checkbox' },
     ],
     displayColumns: [
       { key: 'name', label: 'ชื่อสถานะ' },
       { key: 'code', label: 'รหัส' },
+      { key: 'sort_order', label: 'ลำดับ' },
+      { key: 'is_default', label: 'ค่าเริ่มต้น' },
     ],
-    fetchSelect: 'id, name, code',
-    toInsert: (form) => ({ name: form.name, code: form.code || null }),
-    toUpdate: (form) => ({ name: form.name, code: form.code || null }),
-    toFormValues: (row) => ({ name: row.name || '', code: row.code || '' }),
-    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-' }),
-    toExportRow: (row) => ({ 'ชื่อสถานะ': row.name, 'รหัส': row.code || '' }),
+    fetchSelect: 'id, name, code, sort_order, is_default',
+    orderBy: 'sort_order',
+    orderAsc: true,
+    toInsert: (form) => ({ name: form.name, code: form.code || null, sort_order: parseInt(form.sort_order || '0'), is_default: form.is_default === 'true' }),
+    toUpdate: (form) => ({ name: form.name, code: form.code || null, sort_order: parseInt(form.sort_order || '0'), is_default: form.is_default === 'true' }),
+    toFormValues: (row) => ({ name: row.name || '', code: row.code || '', sort_order: (row.sort_order ?? 0).toString(), is_default: row.is_default ? 'true' : 'false' }),
+    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-', sort_order: (row.sort_order ?? 0).toString(), is_default: row.is_default ? '✅' : '-' }),
+    toExportRow: (row) => ({ 'ชื่อสถานะ': row.name, 'รหัส': row.code || '', 'ลำดับ': (row.sort_order ?? 0).toString(), 'ค่าเริ่มต้น': row.is_default ? 'Yes' : 'No' }),
     importColumns: [
       { key: 'name', label: 'ชื่อสถานะ', required: true },
       { key: 'code', label: 'รหัส' },
@@ -406,9 +414,10 @@ const TAB_CONFIGS: TabConfig[] = [
       { 'ชื่อสถานะ': 'ปิดผู้ผลิต', 'รหัส': 'closed_mfg' },
       { 'ชื่อสถานะ': 'ไม่ปิดผู้ผลิต', 'รหัส': 'not_closed_mfg' },
     ],
-    toImportRows: (rows) => rows.map(r => ({
+    toImportRows: (rows) => rows.map((r, i) => ({
       name: r['name'] || r['ชื่อสถานะ'] || 'ไม่ระบุ',
       code: r['code'] || r['รหัส'] || null,
+      sort_order: i + 1,
     })),
   },
 
@@ -421,17 +430,23 @@ const TAB_CONFIGS: TabConfig[] = [
     formFields: [
       { key: 'name', label: 'ชื่อความสำคัญ', type: 'text', required: true, placeholder: 'กรอกชื่อความสำคัญ' },
       { key: 'code', label: 'รหัส', type: 'text', required: true, placeholder: 'เช่น high' },
+      { key: 'sort_order', label: 'ลำดับ', type: 'number' },
+      { key: 'is_default', label: 'ค่าเริ่มต้น', type: 'checkbox' },
     ],
     displayColumns: [
       { key: 'name', label: 'ชื่อความสำคัญ' },
       { key: 'code', label: 'รหัส' },
+      { key: 'sort_order', label: 'ลำดับ' },
+      { key: 'is_default', label: 'ค่าเริ่มต้น' },
     ],
-    fetchSelect: 'id, name, code',
-    toInsert: (form) => ({ name: form.name, code: form.code }),
-    toUpdate: (form) => ({ name: form.name, code: form.code }),
-    toFormValues: (row) => ({ name: row.name || '', code: row.code || '' }),
-    toDisplayRow: (row) => ({ name: row.name, code: row.code }),
-    toExportRow: (row) => ({ 'ชื่อความสำคัญ': row.name, 'รหัส': row.code }),
+    fetchSelect: 'id, name, code, sort_order, is_default',
+    orderBy: 'sort_order',
+    orderAsc: true,
+    toInsert: (form) => ({ name: form.name, code: form.code, sort_order: parseInt(form.sort_order || '0'), is_default: form.is_default === 'true' }),
+    toUpdate: (form) => ({ name: form.name, code: form.code, sort_order: parseInt(form.sort_order || '0'), is_default: form.is_default === 'true' }),
+    toFormValues: (row) => ({ name: row.name || '', code: row.code || '', sort_order: (row.sort_order ?? 0).toString(), is_default: row.is_default ? 'true' : 'false' }),
+    toDisplayRow: (row) => ({ name: row.name, code: row.code, sort_order: (row.sort_order ?? 0).toString(), is_default: row.is_default ? '✅' : '-' }),
+    toExportRow: (row) => ({ 'ชื่อความสำคัญ': row.name, 'รหัส': row.code, 'ลำดับ': (row.sort_order ?? 0).toString(), 'ค่าเริ่มต้น': row.is_default ? 'Yes' : 'No' }),
     importColumns: [
       { key: 'name', label: 'ชื่อความสำคัญ', required: true },
       { key: 'code', label: 'รหัส', required: true },
@@ -440,9 +455,51 @@ const TAB_CONFIGS: TabConfig[] = [
       { 'ชื่อความสำคัญ': 'ต่ำ', 'รหัส': 'low' },
       { 'ชื่อความสำคัญ': 'กลาง', 'รหัส': 'medium' },
     ],
-    toImportRows: (rows) => rows.map(r => ({
+    toImportRows: (rows) => rows.map((r, i) => ({
       name: r['name'] || r['ชื่อความสำคัญ'] || 'ไม่ระบุ',
       code: r['code'] || r['รหัส'] || 'medium',
+      sort_order: i + 1,
+    })),
+  },
+
+  // ── สาเหตุของปัญหา (Root Cause) ────────────────────────────────────────────────
+  {
+    id: 'root_causes',
+    label: 'สาเหตุ (Root Cause)',
+    icon: Microscope,
+    tableName: 'root_causes',
+    formFields: [
+      { key: 'name', label: 'ชื่อสาเหตุ', type: 'text', required: true, placeholder: 'กรอกชื่อสาเหตุ' },
+      { key: 'code', label: 'รหัส', type: 'text', placeholder: 'เช่น man' },
+      { key: 'sort_order', label: 'ลำดับ', type: 'number' },
+      { key: 'is_default', label: 'ค่าเริ่มต้น', type: 'checkbox' },
+    ],
+    displayColumns: [
+      { key: 'name', label: 'ชื่อสาเหตุ' },
+      { key: 'code', label: 'รหัส' },
+      { key: 'sort_order', label: 'ลำดับ' },
+      { key: 'is_default', label: 'ค่าเริ่มต้น' },
+    ],
+    fetchSelect: 'id, name, code, sort_order, is_default',
+    orderBy: 'sort_order',
+    orderAsc: true,
+    toInsert: (form) => ({ name: form.name, code: form.code || null, sort_order: parseInt(form.sort_order || '0'), is_default: form.is_default === 'true' }),
+    toUpdate: (form) => ({ name: form.name, code: form.code || null, sort_order: parseInt(form.sort_order || '0'), is_default: form.is_default === 'true' }),
+    toFormValues: (row) => ({ name: row.name || '', code: row.code || '', sort_order: (row.sort_order ?? 0).toString(), is_default: row.is_default ? 'true' : 'false' }),
+    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-', sort_order: (row.sort_order ?? 0).toString(), is_default: row.is_default ? '✅' : '-' }),
+    toExportRow: (row) => ({ 'ชื่อสาเหตุ': row.name, 'รหัส': row.code || '', 'ลำดับ': (row.sort_order ?? 0).toString(), 'ค่าเริ่มต้น': row.is_default ? 'Yes' : 'No' }),
+    importColumns: [
+      { key: 'name', label: 'ชื่อสาเหตุ', required: true },
+      { key: 'code', label: 'รหัส' },
+    ],
+    importSampleRows: [
+      { 'ชื่อสาเหตุ': 'Man (คน)', 'รหัส': 'man' },
+      { 'ชื่อสาเหตุ': 'Machine (เครื่องจักร)', 'รหัส': 'machine' },
+    ],
+    toImportRows: (rows) => rows.map((r, i) => ({
+      name: r['name'] || r['ชื่อสาเหตุ'] || 'ไม่ระบุ',
+      code: r['code'] || r['รหัส'] || null,
+      sort_order: i + 1,
     })),
   },
 ];
@@ -475,11 +532,19 @@ function EditCell({
       </Select>
     );
   }
+  if (field.type === 'checkbox') {
+    return (
+      <div className="flex h-7 items-center justify-center">
+        <Checkbox checked={value === 'true'} onCheckedChange={c => onChange(c ? 'true' : 'false')} />
+      </div>
+    );
+  }
   return (
     <Input
+      type={field.type === 'number' ? 'number' : 'text'}
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="h-7 text-xs min-w-[100px]"
+      className="h-7 text-xs min-w-[80px]"
     />
   );
 }
@@ -540,11 +605,11 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
         let { data: chunk, error } = await (supabase
           .from(config.tableName as any)
           .select(config.fetchSelect) as any)
-          .order('created_at', { ascending: false })
+          .order(config.orderBy || 'created_at', { ascending: config.orderAsc ?? false })
           .range(pg * PAGE, (pg + 1) * PAGE - 1);
         if (error) {
           const retry = await (supabase.from(config.tableName as any).select('*') as any)
-            .order('created_at', { ascending: false })
+            .order(config.orderBy || 'created_at', { ascending: config.orderAsc ?? false })
             .range(pg * PAGE, (pg + 1) * PAGE - 1);
           chunk = retry.data;
           if (retry.error) { fetchError = retry.error; break; }
@@ -686,7 +751,7 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
     let { data, error } = await (supabase
       .from(config.tableName as any)
       .select(config.fetchSelect) as any)
-      .order('created_at', { ascending: false });
+      .order(config.orderBy || 'created_at', { ascending: config.orderAsc ?? false });
 
     if (error) {
       const retry = await (supabase.from(config.tableName as any).select('*') as any).limit(10000);
@@ -853,9 +918,15 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                  ) : field.type === 'checkbox' ? (
+                    <div className="flex items-center gap-2 h-8">
+                       <Checkbox id={`${config.id}-${field.key}`} checked={form[field.key] === 'true'} onCheckedChange={c => setForm(f => ({ ...f, [field.key]: c ? 'true' : 'false' }))} />
+                       <label htmlFor={`${config.id}-${field.key}`} className="text-sm cursor-pointer select-none">ใช่</label>
+                    </div>
                   ) : (
                     <Input
                       id={`${config.id}-${field.key}`}
+                      type={field.type === 'number' ? 'number' : 'text'}
                       value={form[field.key] ?? ''}
                       onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
                       placeholder={field.placeholder}

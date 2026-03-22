@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X, Building2, Tag, UserCircle2, FileText } from "lucide-react";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X, Building2, Tag, UserCircle2, FileText, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
@@ -31,15 +31,22 @@ interface LookupData {
   problem_types: (LookupItem & { category_id: string | null })[];
   problem_sub_types: (LookupItem & { problem_type_id: string })[];
   callers: LookupItem[];
-  statuses: (LookupItem & { code: string | null })[];
-  priorities: (LookupItem & { code: string })[];
+  statuses: (LookupItem & { code: string | null; is_default: boolean; sort_order: number })[];
+  priorities: (LookupItem & { code: string; is_default: boolean; sort_order: number })[];
+  root_causes: (LookupItem & { code: string | null; is_default: boolean; sort_order: number })[];
 }
 
+interface ActionItem { measure: string; responsible: string; due_date: string; }
+interface CostItem { item_name: string; amount: string; }
+
+const INITIAL_ACTION_ITEMS: ActionItem[] = [{ measure: "", responsible: "", due_date: "" }];
+const INITIAL_COST_ITEMS: CostItem[] = [{ item_name: "", amount: "" }];
+
 const INITIAL_FORM = {
-  complaint_number: "", complaint_date: "", company_id: "", branch_id: "",
+  complaint_number: "", complaint_date: format(new Date(), "yyyy-MM-dd"), company_id: "", branch_id: "",
   product_group_id: "", category_id: "", problem_type_id: "", problem_sub_type_id: "",
-  caller_id: "", description: "", status: "", priority: "",
-  resolution: "", resolved_at: "",
+  caller_id: "", description: "", status: "", priority: "", root_cause_id: "",
+  root_cause_ids: [] as string[],
 };
 
 // Hardcoded defaults in case database fetch fails
@@ -63,9 +70,11 @@ export default function ComplaintForm() {
   const isStaff = role === "staff";
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(INITIAL_FORM);
+  const [actionItems, setActionItems] = useState<ActionItem[]>(INITIAL_ACTION_ITEMS);
+  const [costItems, setCostItems] = useState<CostItem[]>(INITIAL_COST_ITEMS);
   const [lookup, setLookup] = useState<LookupData>({
     companies: [], branches: [], product_groups: [], categories: [],
-    problem_types: [], problem_sub_types: [], callers: [], statuses: [], priorities: [],
+    problem_types: [], problem_sub_types: [], callers: [], statuses: [], priorities: [], root_causes: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,13 +82,13 @@ export default function ComplaintForm() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [recentComplaints, setRecentComplaints] = useState<any[]>([]);
   const [isListening, setIsListening] = useState(false);
-  const [listeningField, setListeningField] = useState<"description" | "resolution" | null>(null);
+  const [listeningField, setListeningField] = useState<"description" | null>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     async function fetchLookups() {
       try {
-        const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities] =
+        const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities, rootCauses] =
           await Promise.all([
             supabase.from("companies").select("id, name").order("name"),
             supabase.from("branches").select("id, name, company_id").order("name"),
@@ -88,8 +97,9 @@ export default function ComplaintForm() {
             supabase.from("problem_types").select("id, name, category_id").order("name"),
             supabase.from("problem_sub_types").select("id, name, problem_type_id").order("name"),
             supabase.from("callers").select("id, name").order("name"),
-            supabase.from("statuses").select("id, name, code").order("name"),
-            supabase.from("priorities").select("id, name, code").order("name"),
+            supabase.from("statuses").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
+            supabase.from("priorities").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
+            supabase.from("root_causes").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
           ]);
         let companyList = companies.data || [];
         let branchList = (branches.data || []) as (LookupItem & { company_id: string })[];
@@ -113,16 +123,28 @@ export default function ComplaintForm() {
           callers: callers.data || [],
           statuses: (statuses.data || []) as any,
           priorities: (priorities.data || []) as any,
+          root_causes: (rootCauses.data || []) as any,
         });
 
-        // Auto-set company/branch for staff
-        if (isStaff && userProfile?.company_id) {
-          setForm(prev => ({
+        const defaultCallerId = callers.data?.find((c: any) => c.name === "Call ขาเข้า")?.id || "";
+        const defaultStatus = statuses.data?.find((s: any) => s.is_default)?.name || "";
+        const defaultPriority = priorities.data?.find((p: any) => p.is_default)?.code || "low";
+        const defaultRootCause = rootCauses.data?.find((rc: any) => rc.is_default)?.id || "";
+        const defaultRootCauseIds = defaultRootCause ? [defaultRootCause] : [];
+
+        setForm(prev => {
+          if (searchParams.get("edit")) return prev;
+          return {
             ...prev,
-            company_id: prev.company_id || userProfile.company_id!,
-            branch_id: prev.branch_id || userProfile.branch_id || "",
-          }));
-        }
+            caller_id: prev.caller_id || defaultCallerId,
+            status: prev.status || defaultStatus,
+            priority: prev.priority || defaultPriority,
+            root_cause_id: prev.root_cause_id || defaultRootCause,
+            root_cause_ids: prev.root_cause_ids.length > 0 ? prev.root_cause_ids : defaultRootCauseIds,
+            company_id: prev.company_id || (isStaff && userProfile?.company_id ? userProfile.company_id : ""),
+            branch_id: prev.branch_id || (isStaff && userProfile?.branch_id ? userProfile.branch_id : ""),
+          };
+        });
       } catch (err) {
         console.error("fetchLookups error:", err);
       } finally {
@@ -161,17 +183,30 @@ export default function ComplaintForm() {
     });
   }
 
-  function toggleMic(field: "description" | "resolution") {
+  // Action item helpers
+  function addActionItem() { setActionItems(prev => [...prev, { measure: "", responsible: "", due_date: "" }]); }
+  function removeActionItem(idx: number) { setActionItems(prev => prev.filter((_, i) => i !== idx)); }
+  function updateActionItem(idx: number, key: keyof ActionItem, value: string) {
+    setActionItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item));
+  }
+
+  // Cost item helpers
+  function addCostItem() { setCostItems(prev => [...prev, { item_name: "", amount: "" }]); }
+  function removeCostItem(idx: number) { setCostItems(prev => prev.filter((_, i) => i !== idx)); }
+  function updateCostItem(idx: number, key: keyof CostItem, value: string) {
+    setCostItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item));
+  }
+
+  function toggleMic(field: "description") {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("ไม่รองรับเสียงในเบราว์เซอร์นี้");
       return;
     }
 
-    // กดซ้ำช่องเดิม → หยุดฟัง
     if (isListening && listeningField === field) {
       if (recognitionRef.current) {
-        recognitionRef.current.onend = null; // ถอด handler ก่อน stop เพื่อป้องกัน reset ซ้อน
+        recognitionRef.current.onend = null;
         recognitionRef.current.stop();
         recognitionRef.current = null;
       }
@@ -180,14 +215,12 @@ export default function ComplaintForm() {
       return;
     }
 
-    // หยุด recognition เก่า (ถ้ามี) โดยไม่ให้ onend ไปรีเซ็ต state ใหม่
     if (recognitionRef.current) {
       recognitionRef.current.onend = null;
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
 
-    // สร้าง instance ใหม่ทุกครั้ง — `field` ถูก capture ใน closure ของ onresult โดยตรง
     const recognition = new SpeechRecognition();
     recognition.lang = "th-TH";
     recognition.continuous = true;
@@ -205,13 +238,7 @@ export default function ComplaintForm() {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           const transcript = event.results[i][0].transcript;
-          // field ถูก capture ตอน toggleMic ถูกเรียก — ถูกเสมอ 100%
-          setForm(prev => {
-            if (field === "resolution") {
-              return { ...prev, resolution: (prev.resolution + " " + transcript).trim() };
-            }
-            return { ...prev, description: (prev.description + " " + transcript).trim() };
-          });
+          setForm(prev => ({ ...prev, description: (prev.description + " " + transcript).trim() }));
         }
       }
     };
@@ -235,6 +262,20 @@ export default function ComplaintForm() {
     }
   }
 
+  function resetForm() {
+    const defaultRcId = lookup.root_causes.find((rc: any) => rc.is_default)?.id || "";
+    setForm({
+      ...INITIAL_FORM,
+      caller_id: lookup.callers.find(c => c.name === "Call ขาเข้า")?.id || "",
+      status: lookup.statuses.find((s: any) => s.is_default)?.name || "",
+      priority: lookup.priorities.find((p: any) => p.is_default)?.code || "low",
+      root_cause_id: defaultRcId,
+      root_cause_ids: defaultRcId ? [defaultRcId] : [],
+    });
+    setActionItems(INITIAL_ACTION_ITEMS);
+    setCostItems(INITIAL_COST_ITEMS);
+  }
+
   async function handleEditRecent(id: string) {
     const { data, error } = await supabase.from("complaints").select("*").eq("id", id).single();
     if (error || !data) { toast.error("โหลดข้อมูลไม่สำเร็จ"); return; }
@@ -251,9 +292,23 @@ export default function ComplaintForm() {
       description: data.description ?? "",
       status: data.status ?? "",
       priority: data.priority ?? "",
-      resolution: data.resolution ?? "",
-      resolved_at: data.resolved_at ?? "",
+      root_cause_id: data.root_cause_id ?? "",
+      root_cause_ids: Array.isArray((data as any).root_cause_ids) ? (data as any).root_cause_ids : (data.root_cause_id ? [data.root_cause_id] : []),
     });
+    // Load action items — fall back to old resolution field for legacy records
+    if (data.action_items && Array.isArray(data.action_items) && data.action_items.length > 0) {
+      setActionItems(data.action_items as ActionItem[]);
+    } else if (data.resolution) {
+      setActionItems([{ measure: data.resolution, responsible: "", due_date: data.resolved_at ?? "" }]);
+    } else {
+      setActionItems(INITIAL_ACTION_ITEMS);
+    }
+    // Load cost items
+    if (data.cost_items && Array.isArray(data.cost_items) && data.cost_items.length > 0) {
+      setCostItems(data.cost_items as CostItem[]);
+    } else {
+      setCostItems(INITIAL_COST_ITEMS);
+    }
     setEditingId(id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -264,7 +319,10 @@ export default function ComplaintForm() {
     setDeleteConfirmId(null);
     if (error) { toast.error(`ลบไม่สำเร็จ: ${error.message}`); return; }
     toast.success("ลบข้อร้องเรียนสำเร็จ");
-    if (editingId === deleteConfirmId) { setForm(INITIAL_FORM); setEditingId(null); }
+    if (editingId === deleteConfirmId) {
+      resetForm();
+      setEditingId(null);
+    }
     fetchRecent();
   }
 
@@ -275,6 +333,8 @@ export default function ComplaintForm() {
     ? lookup.problem_types.filter(p => p.category_id === form.category_id) : lookup.problem_types;
   const filteredSubTypes = form.problem_type_id
     ? lookup.problem_sub_types.filter(s => s.problem_type_id === form.problem_type_id) : lookup.problem_sub_types;
+
+  const totalCost = costItems.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -289,22 +349,38 @@ export default function ComplaintForm() {
       [form.caller_id, "ช่องทางการแจ้งปัญหา"],
       [form.status, "สถานะ"],
       [form.priority, "ความสำคัญ"],
+      [form.root_cause_ids.length > 0 ? "ok" : "", "Root Cause Analysis"],
       [form.description, "รายละเอียด"],
-      [form.resolution, "การแก้ไข"],
-      [form.resolved_at, "วันที่แก้ไข"],
     ];
     const missing = required.filter(([v]) => !v).map(([, label]) => label);
+
+    // Validate at least one action item with มาตรการ
+    const hasAction = actionItems.some(a => a.measure.trim());
+    if (!hasAction) missing.push("มาตรการ (กรุณากรอกอย่างน้อย 1 รายการ)");
+
     if (missing.length > 0) { toast.error(`กรุณากรอกข้อมูลให้ครบ: ${missing.join(", ")}`); return; }
     setSaving(true);
     try {
+      // Derive resolved_at from the earliest action item due_date for SLA compatibility
+      const firstDueDate = actionItems.find(a => a.due_date)?.due_date || null;
+      // Derive resolution text for backward compat
+      const resolutionText = actionItems.map(a => a.measure).filter(Boolean).join("; ") || null;
+
+      const complaintDateObj = form.complaint_date ? new Date(form.complaint_date) : new Date();
       const payload: Record<string, any> = {
         complaint_number: form.complaint_number,
         complaint_date: form.complaint_date || null,
         description: form.description || null,
         status: form.status || null,
         priority: form.priority || null,
-        resolution: form.resolution || null,
-        resolved_at: form.resolved_at || null,
+        root_cause_id: form.root_cause_ids.length > 0 ? form.root_cause_ids[0] : null,
+        root_cause_ids: form.root_cause_ids,
+        action_items: actionItems,
+        cost_items: costItems,
+        resolution: resolutionText,
+        resolved_at: firstDueDate,
+        closed_case_month: complaintDateObj.getMonth() + 1,
+        closed_case_year: complaintDateObj.getFullYear(),
       };
       if (form.company_id) payload.company_id = form.company_id;
       if (form.branch_id) payload.branch_id = form.branch_id;
@@ -323,7 +399,7 @@ export default function ComplaintForm() {
         if (!error) toast.success("บันทึกข้อร้องเรียนสำเร็จ");
       }
       if (error) throw error;
-      setForm(INITIAL_FORM);
+      resetForm();
       fetchRecent();
     } catch (err: any) {
       toast.error(`เกิดข้อผิดพลาด: ${err.message}`);
@@ -363,7 +439,10 @@ export default function ComplaintForm() {
                   </div>
                 </div>
                 {editingId && (
-                  <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" onClick={() => { setForm(INITIAL_FORM); setEditingId(null); }}>
+                  <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" onClick={() => {
+                    resetForm();
+                    setEditingId(null);
+                  }}>
                     <X className="h-4 w-4" /> ยกเลิกแก้ไข
                   </Button>
                 )}
@@ -512,9 +591,9 @@ export default function ComplaintForm() {
                   </div>
                 </div>
 
-                {/* ─── Section 4: รายละเอียดและการแก้ไข ─── */}
+                {/* ─── Section 4: รายละเอียด ─── */}
                 <div className="form-section">
-                  <p className="form-section-title"><FileText className="w-3.5 h-3.5" />รายละเอียดและการแก้ไข</p>
+                  <p className="form-section-title"><FileText className="w-3.5 h-3.5" />รายละเอียด</p>
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -525,31 +604,168 @@ export default function ComplaintForm() {
                       </div>
                       <Textarea id="description" placeholder="อธิบายรายละเอียดข้อร้องเรียน..." value={form.description} onChange={e => setField("description", e.target.value)} rows={3} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="resolution" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">การแก้ไข <span className="text-destructive">*</span></Label>
-                          <Button type="button" size="sm" variant={listeningField === "resolution" ? "default" : "outline"} onClick={() => toggleMic("resolution")} className="gap-2 h-7 text-xs px-2.5">
-                            {listeningField === "resolution" ? <><Mic className="h-3.5 w-3.5 animate-pulse" />กำลังฟัง...</> : <><MicOff className="h-3.5 w-3.5" />พูด</>}
-                          </Button>
-                        </div>
-                        <Textarea id="resolution" placeholder="วิธีการแก้ไข (ถ้ามี)..." value={form.resolution} onChange={e => setField("resolution", e.target.value)} rows={3} />
+
+                    <div className="space-y-3 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                      <Label className="text-sm font-semibold text-emerald-600 block">
+                        Root Cause Analysis <span className="text-destructive">*</span>
+                        <span className="text-xs font-normal text-muted-foreground ml-2">(เลือกได้มากกว่า 1 ข้อ)</span>
+                      </Label>
+                      <div className="flex flex-wrap gap-2.5 mt-2">
+                        {lookup.root_causes.map(rc => {
+                          const isSelected = form.root_cause_ids.includes(rc.id);
+                          return (
+                            <div
+                              key={rc.id}
+                              onClick={() => {
+                                setForm(prev => {
+                                  const ids = prev.root_cause_ids.includes(rc.id)
+                                    ? prev.root_cause_ids.filter(id => id !== rc.id)
+                                    : [...prev.root_cause_ids, rc.id];
+                                  return { ...prev, root_cause_ids: ids, root_cause_id: ids[0] || "" };
+                                });
+                              }}
+                              className={`flex items-center gap-2.5 cursor-pointer group px-3.5 py-2 rounded-lg border transition-all ${isSelected ? "bg-emerald-500/15 border-emerald-500/50" : "border-border/40 bg-background hover:border-emerald-400/50"}`}
+                            >
+                              <div className={`w-4.5 h-4.5 flex items-center justify-center border rounded transition-colors ${isSelected ? "bg-emerald-500 border-emerald-500" : "border-input bg-background group-hover:border-emerald-400"}`}>
+                                {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                              </div>
+                              <span className={`text-sm select-none ${isSelected ? "text-emerald-300 font-medium" : "text-foreground"}`}>{rc.name}</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">วันที่แก้ไข <span className="text-destructive">*</span></Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.resolved_at && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {form.resolved_at ? format(new Date(form.resolved_at), "d MMMM yyyy", { locale: th }) : <span>เลือกวันที่แก้ไข</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={form.resolved_at ? new Date(form.resolved_at) : undefined} onSelect={(date) => setField("resolved_at", date ? format(date, "yyyy-MM-dd") : "")} initialFocus className="p-3 pointer-events-auto" />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
+                      {form.root_cause_ids.length > 1 && (
+                        <p className="text-xs text-emerald-400/70 mt-1">
+                          เลือกแล้ว {form.root_cause_ids.length} สาเหตุ
+                        </p>
+                      )}
                     </div>
+                  </div>
+                </div>
+
+                {/* ─── Section 5: มาตรการแก้ไข ─── */}
+                <div className="form-section">
+                  <p className="form-section-title"><CheckCircle2 className="w-3.5 h-3.5" />มาตรการแก้ไข</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        รายการมาตรการ <span className="text-destructive">*</span>
+                      </Label>
+                      <Button type="button" size="sm" variant="outline" onClick={addActionItem} className="gap-1.5 h-7 text-xs px-2.5">
+                        <Plus className="h-3 w-3" />เพิ่มรายการ
+                      </Button>
+                    </div>
+
+                    {actionItems.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-secondary/20 border border-border/40 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">รายการที่ {idx + 1}</span>
+                          {actionItems.length > 1 && (
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeActionItem(idx)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="space-y-1 md:col-span-1">
+                            <Label className="text-xs text-muted-foreground">มาตรการ <span className="text-destructive">*</span></Label>
+                            <Input
+                              value={item.measure}
+                              onChange={e => updateActionItem(idx, "measure", e.target.value)}
+                              placeholder="ระบุมาตรการแก้ไข..."
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">ผู้รับผิดชอบ</Label>
+                            <Input
+                              value={item.responsible}
+                              onChange={e => updateActionItem(idx, "responsible", e.target.value)}
+                              placeholder="ชื่อผู้รับผิดชอบ..."
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">กำหนดแล้วเสร็จ</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn("w-full justify-start text-left font-normal text-sm h-9", !item.due_date && "text-muted-foreground")}
+                                >
+                                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                  {item.due_date ? format(new Date(item.due_date), "d MMM yyyy", { locale: th }) : <span>เลือกวันที่</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={item.due_date ? new Date(item.due_date) : undefined}
+                                  onSelect={(date) => updateActionItem(idx, "due_date", date ? format(date, "yyyy-MM-dd") : "")}
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ─── Section 6: ค่าใช้จ่ายที่เกิดขึ้น ─── */}
+                <div className="form-section">
+                  <p className="form-section-title"><Receipt className="w-3.5 h-3.5" />ค่าใช้จ่ายที่เกิดขึ้น</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">รายการค่าใช้จ่าย</Label>
+                      <Button type="button" size="sm" variant="outline" onClick={addCostItem} className="gap-1.5 h-7 text-xs px-2.5">
+                        <Plus className="h-3 w-3" />เพิ่มรายการ
+                      </Button>
+                    </div>
+
+                    {costItems.map((item, idx) => (
+                      <div key={idx} className="flex items-end gap-3">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs text-muted-foreground">รายการ</Label>
+                          <Input
+                            value={item.item_name}
+                            onChange={e => updateCostItem(idx, "item_name", e.target.value)}
+                            placeholder="รายการค่าใช้จ่าย..."
+                          />
+                        </div>
+                        <div className="w-40 space-y-1">
+                          <Label className="text-xs text-muted-foreground">จำนวนเงิน (บาท)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.amount}
+                            onChange={e => updateCostItem(idx, "amount", e.target.value)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        {costItems.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={() => removeCostItem(idx)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+
+                    {totalCost > 0 && (
+                      <div className="flex justify-end pt-2 border-t border-border/30">
+                        <span className="text-sm font-semibold text-foreground">
+                          รวมทั้งสิ้น: <span className="text-primary">{totalCost.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

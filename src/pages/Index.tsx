@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -11,6 +11,7 @@ import GroupsTab from "@/components/dashboard/GroupsTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
 import MapTab from "@/components/dashboard/MapTab";
+import RootCauseAnalysisTab from "@/components/dashboard/RootCauseAnalysisTab";
 import TVMode from "@/components/dashboard/TVMode";
 import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
@@ -21,6 +22,7 @@ const TABS = [
   { id: "problems", label: "ประเภทปัญหา", icon: AlertTriangle },
   { id: "groups", label: "กลุ่มสินค้า", icon: Factory },
   { id: "performance", label: "ประสิทธิภาพ", icon: Timer },
+  { id: "rootcause", label: "วิเคราะห์สาเหตุ", icon: GitBranch },
   { id: "deep", label: "เชิงลึก", icon: Microscope },
   { id: "map", label: "วิเคราะห์ CDC เชิงพื้นที่", icon: MapPin },
 ];
@@ -174,6 +176,7 @@ export default function Index() {
             {activeTab === "problems" && <ProblemsTab data={data} />}
             {activeTab === "groups" && <GroupsTab data={data} />}
             {activeTab === "performance" && <PerformanceTab data={data} />}
+            {activeTab === "rootcause" && <RootCauseAnalysisTab />}
             {activeTab === "deep" && <DeepAnalysisTab data={data} />}
             {activeTab === "map" && (
               <MapTab

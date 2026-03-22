@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type AppRole = "admin" | "supervisor" | "executive" | "staff";
 
@@ -8,6 +9,7 @@ export type Resource =
   | "dashboard"
   | "complaint_list"
   | "complaint_form"
+  | "close_case_adjust"
   | "master_data"
   | "user_management"
   | "role_permissions";
@@ -51,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role, company_id, branch_id, full_name, department")
+        .select("role, company_id, branch_id, full_name, department, is_active")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) {
@@ -61,6 +63,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
       const fetchedRole = (data?.role as AppRole) || null;
+      
+      if (data && data.is_active === false) {
+        toast.error("บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+        await supabase.auth.signOut();
+        return null;
+      }
+
       setRole(fetchedRole);
       setUserProfile(data ? {
         company_id: data.company_id,

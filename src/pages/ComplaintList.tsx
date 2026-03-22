@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
+import { Plus, Search, ChevronLeft, ChevronRight, Pencil, FileDown, Loader2, ChevronUp, ChevronDown, CalendarIcon, X } from "lucide-react";
 import TopNavBar from "@/components/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,18 +10,51 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
 
+function DatePickerInput({ value, onChange, placeholder }: { value: Date | undefined; onChange: (d: Date | undefined) => void; placeholder: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="h-9 w-[155px] justify-start text-sm font-normal gap-2">
+          <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          {value ? (
+            <span>{format(value, "d MMM yyyy", { locale: th })}</span>
+          ) : (
+            <span className="text-muted-foreground">{placeholder}</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={d => { onChange(d); setOpen(false); }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface ComplaintRow {
   id: string;
+  closed_case_month: number | null;
+  closed_case_year: number | null;
   complaint_number: string | null;
   complaint_date: string | null;
   status: string | null;
   priority: string | null;
   resolution: string | null;
   resolved_at: string | null;
+  description: string | null;
+  action_items: any[] | null;
+  cost_items: any[] | null;
   companies: { name: string } | null;
   branches: { name: string } | null;
   product_groups: { name: string } | null;
@@ -27,6 +62,7 @@ interface ComplaintRow {
   problem_types: { name: string } | null;
   problem_sub_types: { name: string } | null;
   callers: { name: string } | null;
+  root_causes: { name: string } | null;
 }
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -76,10 +112,18 @@ export default function ComplaintList() {
   const [companyFilter, setCompanyFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  // Sorting
+  const [sortBy, setSortBy] = useState<string>("complaint_date");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   // Pagination
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+
+  const [exporting, setExporting] = useState(false);
 
   // Filter options
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
@@ -114,15 +158,17 @@ export default function ComplaintList() {
 
       let countQuery = supabase.from("complaints").select("*", { count: "exact", head: true });
       let dataQuery = supabase.from("complaints").select(`
-        id, complaint_number, complaint_date, status, priority, resolution, resolved_at,
+        id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority, resolution, resolved_at,
+        description, action_items, cost_items,
         companies:company_id(name),
         branches:branch_id(name),
         product_groups:product_group_id(name),
         categories:category_id(name),
         problem_types:problem_type_id(name),
         problem_sub_types:problem_sub_type_id(name),
-        callers:caller_id(name)
-      `).order("complaint_date", { ascending: false }).range(page * pageSize, (page + 1) * pageSize - 1);
+        callers:caller_id(name),
+        root_causes:root_cause_id(name)
+      `).order(sortBy, { ascending: sortOrder === "asc" }).range(page * pageSize, (page + 1) * pageSize - 1);
 
       if (companyFilter !== "ALL") {
         countQuery = countQuery.eq("company_id", companyFilter);
@@ -141,6 +187,16 @@ export default function ComplaintList() {
         countQuery = countQuery.ilike("complaint_number", s);
         dataQuery = dataQuery.ilike("complaint_number", s);
       }
+      if (dateFrom) {
+        const from = format(dateFrom, "yyyy-MM-dd");
+        countQuery = countQuery.gte("complaint_date", from);
+        dataQuery = dataQuery.gte("complaint_date", from);
+      }
+      if (dateTo) {
+        const to = format(dateTo, "yyyy-MM-dd");
+        countQuery = countQuery.lte("complaint_date", to);
+        dataQuery = dataQuery.lte("complaint_date", to);
+      }
 
       const [{ count }, { data }] = await Promise.all([countQuery, dataQuery]);
       setTotalCount(count || 0);
@@ -148,12 +204,242 @@ export default function ComplaintList() {
       setLoading(false);
     }
     fetchData();
-  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search]);
+  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo]);
 
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [companyFilter, statusFilter, categoryFilter, search, pageSize]);
+  useEffect(() => { setPage(0); }, [companyFilter, statusFilter, categoryFilter, search, pageSize, sortBy, sortOrder, dateFrom, dateTo]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      // Fetch ALL matching records (no pagination)
+      let query = supabase.from("complaints").select(`
+        id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority,
+        description, resolution, resolved_at, action_items, cost_items,
+        companies:company_id(name),
+        branches:branch_id(name),
+        product_groups:product_group_id(name),
+        categories:category_id(name),
+        problem_types:problem_type_id(name),
+        problem_sub_types:problem_sub_type_id(name),
+        callers:caller_id(name),
+        root_causes:root_cause_id(name)
+      `).order("complaint_date", { ascending: false });
+
+      if (companyFilter !== "ALL") query = query.eq("company_id", companyFilter);
+      if (statusFilter !== "ALL") query = query.eq("status", statusFilter);
+      if (categoryFilter !== "ALL") query = query.eq("category_id", categoryFilter);
+      if (search.trim()) query = query.ilike("complaint_number", `%${search.trim()}%`);
+
+      const { data } = await query;
+      const rows = (data as any as ComplaintRow[]) || [];
+
+      const ExcelJS = (await import("exceljs")).default;
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "SmartCare";
+      wb.created = new Date();
+
+      const ws = wb.addWorksheet("รายงานข้อร้องเรียน", {
+        pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
+        views: [{ state: "frozen", ySplit: 4 }],
+      });
+
+      // ── colour palette ──
+      const BLUE_DARK  = "1E3A5F";
+      const BLUE_MID   = "2563EB";
+      const BLUE_LIGHT = "DBEAFE";
+      const GOLD       = "F59E0B";
+      const GRAY_ROW   = "F8FAFC";
+      const WHITE      = "FFFFFF";
+
+      const borderThin: ExcelJS.Border = { style: "thin", color: { argb: "CBD5E1" } };
+      const borders = { top: borderThin, left: borderThin, bottom: borderThin, right: borderThin };
+
+      // ── column definitions ──
+      const cols = [
+        { header: "ลำดับ",           key: "no",          width: 6  },
+        { header: "เดือนที่ปิด",      key: "closed_month", width: 12 },
+        { header: "ปีที่ปิด",         key: "closed_year",  width: 12 },
+        { header: "เลขที่เอกสาร",     key: "number",      width: 22 },
+        { header: "วันที่แจ้ง",        key: "date",        width: 13 },
+        { header: "บริษัท",           key: "company",     width: 22 },
+        { header: "สาขา",             key: "branch",      width: 18 },
+        { header: "กลุ่มสินค้า",       key: "product",     width: 18 },
+        { header: "หมวดหมู่",          key: "category",    width: 18 },
+        { header: "ประเภทปัญหา",      key: "ptype",       width: 22 },
+        { header: "ประเภทปัญหาย่อย",  key: "psubtype",    width: 22 },
+        { header: "ช่องทางแจ้ง",       key: "caller",      width: 16 },
+        { header: "ความสำคัญ",        key: "priority",    width: 12 },
+        { header: "สถานะ",            key: "status",      width: 18 },
+        { header: "Root Cause",       key: "rootcause",   width: 20 },
+        { header: "รายละเอียด",        key: "desc",        width: 35 },
+        { header: "มาตรการ",          key: "measure",     width: 30 },
+        { header: "ผู้รับผิดชอบ",      key: "responsible", width: 18 },
+        { header: "กำหนดแล้วเสร็จ",   key: "duedate",     width: 15 },
+        { header: "รายการค่าใช้จ่าย",  key: "costs",       width: 35 },
+        { header: "รวมค่าใช้จ่าย (บาท)", key: "totalcost", width: 16 },
+      ];
+      ws.columns = cols;
+
+      const lastCol = String.fromCharCode(64 + cols.length); // e.g. "S"
+
+      // ── Row 1: Title ──
+      ws.mergeCells(`A1:${lastCol}1`);
+      const titleCell = ws.getCell("A1");
+      titleCell.value = "รายงานข้อร้องเรียน — SmartCare";
+      titleCell.font = { name: "TH Sarabun New", bold: true, size: 20, color: { argb: WHITE } };
+      titleCell.alignment = { horizontal: "center", vertical: "middle" };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BLUE_DARK } };
+      ws.getRow(1).height = 36;
+
+      // ── Row 2: Export info ──
+      ws.mergeCells(`A2:${lastCol}2`);
+      const infoCell = ws.getCell("A2");
+      const now = new Date();
+      const exportedAt = now.toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })
+        + "  เวลา " + now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      infoCell.value = `ส่งออกข้อมูล ณ วันที่ ${exportedAt}  |  จำนวนทั้งหมด ${rows.length} รายการ`;
+      infoCell.font = { name: "TH Sarabun New", size: 12, color: { argb: WHITE }, italic: true };
+      infoCell.alignment = { horizontal: "center", vertical: "middle" };
+      infoCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BLUE_MID } };
+      ws.getRow(2).height = 22;
+
+      // ── Row 3: Filter summary ──
+      ws.mergeCells(`A3:${lastCol}3`);
+      const filterParts: string[] = [];
+      if (companyFilter !== "ALL") filterParts.push(`บริษัท: ${companies.find(c => c.id === companyFilter)?.name}`);
+      if (statusFilter !== "ALL") filterParts.push(`สถานะ: ${statusFilter}`);
+      if (categoryFilter !== "ALL") filterParts.push(`หมวดหมู่: ${categories.find(c => c.id === categoryFilter)?.name}`);
+      if (search.trim()) filterParts.push(`ค้นหา: "${search.trim()}"`);
+      const filterCell = ws.getCell("A3");
+      filterCell.value = filterParts.length > 0 ? `ตัวกรอง: ${filterParts.join("  |  ")}` : "ตัวกรอง: ทั้งหมด";
+      filterCell.font = { name: "TH Sarabun New", size: 11, color: { argb: BLUE_DARK } };
+      filterCell.alignment = { horizontal: "left", vertical: "middle" };
+      filterCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BLUE_LIGHT } };
+      ws.getRow(3).height = 20;
+
+      // ── Row 4: Header ──
+      const headerRow = ws.getRow(4);
+      headerRow.height = 28;
+      cols.forEach((col, i) => {
+        const cell = headerRow.getCell(i + 1);
+        cell.value = col.header;
+        cell.font = { name: "TH Sarabun New", bold: true, size: 13, color: { argb: WHITE } };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GOLD } };
+        cell.border = borders;
+      });
+
+      const PRIORITY_TH: Record<string, string> = { critical: "วิกฤต", high: "สูง", medium: "กลาง", low: "ต่ำ" };
+
+      // ── Data rows ──
+      rows.forEach((c, idx) => {
+        const isEven = idx % 2 === 0;
+        const rowBg = isEven ? WHITE : GRAY_ROW;
+
+        const actionItems: any[] = Array.isArray(c.action_items) ? c.action_items : [];
+        // One row per action item; if none, one row for the complaint
+        const itemCount = Math.max(actionItems.length, 1);
+
+        for (let ai = 0; ai < itemCount; ai++) {
+          const action = actionItems[ai] || null;
+          const costItems: any[] = Array.isArray(c.cost_items) ? c.cost_items : [];
+          const totalCost = costItems.reduce((s, ci) => s + (parseFloat(ci.amount) || 0), 0);
+          const costsText = costItems.map(ci => `${ci.item_name || ""}${ci.amount ? ` (${parseFloat(ci.amount).toLocaleString("th-TH")} บ.)` : ""}`).filter(Boolean).join("\n");
+
+          const rowData: Record<string, any> = {
+            no:          ai === 0 ? idx + 1 : "",
+            closed_month: ai === 0 ? (c.closed_case_month || "-") : "",
+            closed_year:  ai === 0 ? (c.closed_case_year || "-") : "",
+            number:      ai === 0 ? (c.complaint_number || "-") : "",
+            date:        ai === 0 ? (c.complaint_date ? new Date(c.complaint_date).toLocaleDateString("th-TH") : "-") : "",
+            company:     ai === 0 ? (c.companies?.name || "-") : "",
+            branch:      ai === 0 ? (c.branches?.name || "-") : "",
+            product:     ai === 0 ? (c.product_groups?.name || "-") : "",
+            category:    ai === 0 ? (c.categories?.name || "-") : "",
+            ptype:       ai === 0 ? (c.problem_types?.name || "-") : "",
+            psubtype:    ai === 0 ? (c.problem_sub_types?.name || "-") : "",
+            caller:      ai === 0 ? (c.callers?.name || "-") : "",
+            priority:    ai === 0 ? (PRIORITY_TH[(c.priority || "").toLowerCase()] || c.priority || "-") : "",
+            status:      ai === 0 ? (c.status || "-") : "",
+            rootcause:   ai === 0 ? (c.root_causes?.name || "-") : "",
+            desc:        ai === 0 ? (c.description || "-") : "",
+            measure:     action?.measure || "-",
+            responsible: action?.responsible || "-",
+            duedate:     action?.due_date ? new Date(action.due_date).toLocaleDateString("th-TH") : "-",
+            costs:       ai === 0 ? (costsText || "-") : "",
+            totalcost:   ai === 0 ? (totalCost > 0 ? totalCost : "") : "",
+          };
+
+          const exRow = ws.addRow(rowData);
+          exRow.height = 20;
+
+          exRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+            cell.font = { name: "TH Sarabun New", size: 12 };
+            cell.alignment = { vertical: "middle", wrapText: true,
+              horizontal: colNum === 1 ? "center" : colNum === 21 ? "right" : "left" };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowBg } };
+            cell.border = borders;
+          });
+
+          // Highlight total cost cell
+          if (ai === 0 && totalCost > 0) {
+            const costCell = exRow.getCell(21);
+            costCell.numFmt = '#,##0.00';
+            costCell.font = { name: "TH Sarabun New", size: 12, bold: true, color: { argb: "065F46" } };
+            costCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D1FAE5" } };
+          }
+
+          // Colour status cell
+          if (ai === 0) {
+            const statusCell = exRow.getCell(14);
+            const statusBg: Record<string, string> = {
+              "ปิดผู้ผลิต": "D1FAE5", "ไม่ปิดผู้ผลิต": "FEE2E2",
+            };
+            const statusFg: Record<string, string> = {
+              "ปิดผู้ผลิต": "065F46", "ไม่ปิดผู้ผลิต": "991B1B",
+            };
+            const s = c.status || "";
+            if (statusBg[s]) {
+              statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: statusBg[s] } };
+              statusCell.font = { name: "TH Sarabun New", size: 12, bold: true, color: { argb: statusFg[s] } };
+            }
+          }
+
+          // Colour priority cell
+          if (ai === 0) {
+            const priCell = exRow.getCell(13);
+            const priBg: Record<string, string> = {
+              critical: "FEE2E2", high: "FEF3C7", medium: "DBEAFE", low: "F0FDF4",
+            };
+            const priFg: Record<string, string> = {
+              critical: "991B1B", high: "92400E", medium: "1E40AF", low: "14532D",
+            };
+            const pk = (c.priority || "").toLowerCase();
+            if (priBg[pk]) {
+              priCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: priBg[pk] } };
+              priCell.font = { name: "TH Sarabun New", size: 12, bold: true, color: { argb: priFg[pk] } };
+            }
+          }
+        }
+      });
+
+      // ── Download ──
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+      a.download = `SmartCare_Complaints_${dateStr}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -168,14 +454,20 @@ export default function ComplaintList() {
               ทั้งหมด <span className="text-primary font-semibold">{totalCount}</span> รายการ
             </p>
           </div>
-          <Link to="/complaints/new">
-            <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />บันทึกใหม่</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleExport} disabled={exporting || totalCount === 0}>
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              {exporting ? "กำลัง Export..." : "Export Excel"}
+            </Button>
+            <Link to="/complaints/new">
+              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />บันทึกใหม่</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="space-y-4">
           {/* Filters */}
-          <div className="glass rounded-2xl p-4">
+          <div className="glass rounded-2xl p-4 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -208,6 +500,19 @@ export default function ComplaintList() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">วันที่แจ้ง:</span>
+              <div className="flex items-center gap-2">
+                <DatePickerInput value={dateFrom} onChange={setDateFrom} placeholder="ตั้งแต่วันที่" />
+                <span className="text-muted-foreground text-xs">–</span>
+                <DatePickerInput value={dateTo} onChange={setDateTo} placeholder="ถึงวันที่" />
+                {(dateFrom || dateTo) && (
+                  <Button variant="ghost" size="sm" className="h-9 px-2 text-muted-foreground" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Table */}
@@ -216,15 +521,61 @@ export default function ComplaintList() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[140px]">เลขที่</TableHead>
-                    <TableHead className="w-[95px]">วันที่</TableHead>
-                    <TableHead>บริษัท</TableHead>
-                    <TableHead className="hidden lg:table-cell">สาขา</TableHead>
-                    <TableHead className="hidden xl:table-cell">กลุ่มสินค้า</TableHead>
-                    <TableHead>ประเภทปัญหา</TableHead>
-                    <TableHead className="hidden md:table-cell">ผู้แจ้ง</TableHead>
-                    <TableHead className="w-[80px]">ความสำคัญ</TableHead>
-                    <TableHead className="w-[120px]">สถานะ</TableHead>
+                    <TableHead className="w-[100px]">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("closed_case_month"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        เดือนที่ปิด {sortBy === "closed_case_month" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[100px]">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("closed_case_year"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        ปีที่ปิด {sortBy === "closed_case_year" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[140px]">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("complaint_number"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        เลขที่ {sortBy === "complaint_number" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[105px]">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("complaint_date"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        วันที่ {sortBy === "complaint_date" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("companies(name)"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        บริษัท {sortBy === "companies(name)" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("branches(name)"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        สาขา {sortBy === "branches(name)" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="hidden xl:table-cell">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("product_groups(name)"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        กลุ่มสินค้า {sortBy === "product_groups(name)" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead>
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("problem_types(name)"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        ประเภทปัญหา {sortBy === "problem_types(name)" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("callers(name)"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        ผู้แจ้ง {sortBy === "callers(name)" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[80px]">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("priority"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        ความสำคัญ {sortBy === "priority" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[120px]">
+                      <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("status"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        สถานะ {sortBy === "status" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
                     <TableHead className="w-[70px] text-center">SLA</TableHead>
                     <TableHead className="w-[56px] text-center">แก้ไข</TableHead>
                   </TableRow>
@@ -232,7 +583,7 @@ export default function ComplaintList() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-16 text-muted-foreground">
+                      <TableCell colSpan={13} className="text-center py-16 text-muted-foreground">
                         <div className="flex items-center justify-center gap-2">
                           <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                           กำลังโหลด...
@@ -241,7 +592,7 @@ export default function ComplaintList() {
                     </TableRow>
                   ) : complaints.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-16 text-muted-foreground">
+                      <TableCell colSpan={13} className="text-center py-16 text-muted-foreground">
                         ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
                       </TableCell>
                     </TableRow>
@@ -251,6 +602,8 @@ export default function ComplaintList() {
                       const pKey = (c.priority || "").toLowerCase();
                       return (
                         <TableRow key={c.id} className="group hover:bg-secondary/30 transition-colors">
+                          <TableCell className="text-xs text-muted-foreground">{c.closed_case_month || "-"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{c.closed_case_year || "-"}</TableCell>
                           <TableCell className="font-mono text-xs text-primary/90">{c.complaint_number || "-"}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{c.complaint_date || "-"}</TableCell>
                           <TableCell className="text-sm font-medium">{c.companies?.name || "-"}</TableCell>

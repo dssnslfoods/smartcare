@@ -44,13 +44,7 @@ export default function OverviewTab({ data }: Props) {
     calls: m.calls,
   }));
 
-  const categoryGroups: Record<string, number> = {
-    "Recall": 0,
-    "Complaint Food Safety": data.category["Food Safety"] || 0,
-    "Complaint Food Quality": data.category["Food Quality"] || 0,
-    "Complaint Food Law": data.category["Food Law"] || 0,
-    "Complaint Service": data.category["Food Service"] || 0,
-  };
+  const categoryGroups: Record<string, number> = data.category || {};
 
   // Dynamic insights
   const totalRecords = data.kpi.total_records || 1;
