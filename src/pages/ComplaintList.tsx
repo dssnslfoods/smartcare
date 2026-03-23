@@ -455,24 +455,12 @@ export default function ComplaintList() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative group">
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                onClick={handleExport}
-                disabled={exporting || totalCount === 0 || role !== "admin"}
-                title={role !== "admin" ? "เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถ export ได้" : ""}
-              >
+            {role === "admin" && (
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={handleExport} disabled={exporting || totalCount === 0}>
                 {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                 {exporting ? "กำลัง Export..." : "Export Excel"}
               </Button>
-              {role !== "admin" && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  เฉพาะผู้ดูแลระบบเท่านั้น
-                </div>
-              )}
-            </div>
+            )}
             <Link to="/complaints/new">
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />บันทึกใหม่</Button>
             </Link>
