@@ -115,6 +115,8 @@ export default function ComplaintList() {
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [closeMonthFilter, setCloseMonthFilter] = useState("ALL");
+  const [closeYearFilter, setCloseYearFilter] = useState("ALL");
 
   // Sorting
   const [sortBy, setSortBy] = useState<string>("complaint_date");
@@ -198,6 +200,14 @@ export default function ComplaintList() {
         countQuery = countQuery.lte("complaint_date", to);
         dataQuery = dataQuery.lte("complaint_date", to);
       }
+      if (closeMonthFilter !== "ALL") {
+        countQuery = countQuery.eq("closed_case_month", parseInt(closeMonthFilter));
+        dataQuery = dataQuery.eq("closed_case_month", parseInt(closeMonthFilter));
+      }
+      if (closeYearFilter !== "ALL") {
+        countQuery = countQuery.eq("closed_case_year", parseInt(closeYearFilter));
+        dataQuery = dataQuery.eq("closed_case_year", parseInt(closeYearFilter));
+      }
       if (isStaff && user?.id) {
         countQuery = countQuery.eq("created_by", user.id);
         dataQuery = dataQuery.eq("created_by", user.id);
@@ -209,10 +219,10 @@ export default function ComplaintList() {
       setLoading(false);
     }
     fetchData();
-  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo, isStaff, user?.id]);
+  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo, closeMonthFilter, closeYearFilter, isStaff, user?.id]);
 
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [companyFilter, statusFilter, categoryFilter, search, pageSize, sortBy, sortOrder, dateFrom, dateTo]);
+  useEffect(() => { setPage(0); }, [companyFilter, statusFilter, categoryFilter, search, pageSize, sortBy, sortOrder, dateFrom, dateTo, closeMonthFilter, closeYearFilter]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -243,6 +253,8 @@ export default function ComplaintList() {
         if (statusFilter !== "ALL") query = query.eq("status", statusFilter);
         if (categoryFilter !== "ALL") query = query.eq("category_id", categoryFilter);
         if (search.trim()) query = query.ilike("complaint_number", `%${search.trim()}%`);
+        if (closeMonthFilter !== "ALL") query = query.eq("closed_case_month", parseInt(closeMonthFilter));
+        if (closeYearFilter !== "ALL") query = query.eq("closed_case_year", parseInt(closeYearFilter));
         if (isStaff && user?.id) query = query.eq("created_by", user.id);
         const { data } = await query;
         const batch = (data as any as ComplaintRow[]) || [];
@@ -534,6 +546,30 @@ export default function ComplaintList() {
                   </Button>
                 )}
               </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">เดือนที่ปิด:</span>
+              <Select value={closeMonthFilter} onValueChange={setCloseMonthFilter}>
+                <SelectTrigger className="w-[130px]"><SelectValue placeholder="ทุกเดือน" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">ทุกเดือน</SelectItem>
+                  {["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"].map((m, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={closeYearFilter} onValueChange={setCloseYearFilter}>
+                <SelectTrigger className="w-[110px]"><SelectValue placeholder="ทุกปี" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">ทุกปี</SelectItem>
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                    <SelectItem key={y} value={String(y)}>{y + 543}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(closeMonthFilter !== "ALL" || closeYearFilter !== "ALL") && (
+                <Button variant="ghost" size="sm" className="h-9 px-2 text-muted-foreground" onClick={() => { setCloseMonthFilter("ALL"); setCloseYearFilter("ALL"); }}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
           </div>
 
