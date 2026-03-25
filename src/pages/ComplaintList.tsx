@@ -100,7 +100,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ComplaintList() {
-  const { role, userProfile } = useAuth();
+  const { role, userProfile, user } = useAuth();
   const isStaff = role === "staff";
 
   const [complaints, setComplaints] = useState<ComplaintRow[]>([]);
@@ -197,6 +197,10 @@ export default function ComplaintList() {
         countQuery = countQuery.lte("complaint_date", to);
         dataQuery = dataQuery.lte("complaint_date", to);
       }
+      if (isStaff && user?.id) {
+        countQuery = countQuery.eq("created_by", user.id);
+        dataQuery = dataQuery.eq("created_by", user.id);
+      }
 
       const [{ count }, { data }] = await Promise.all([countQuery, dataQuery]);
       setTotalCount(count || 0);
@@ -204,7 +208,7 @@ export default function ComplaintList() {
       setLoading(false);
     }
     fetchData();
-  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo]);
+  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo, isStaff, user?.id]);
 
   // Reset page on filter change
   useEffect(() => { setPage(0); }, [companyFilter, statusFilter, categoryFilter, search, pageSize, sortBy, sortOrder, dateFrom, dateTo]);
@@ -232,6 +236,7 @@ export default function ComplaintList() {
       if (statusFilter !== "ALL") query = query.eq("status", statusFilter);
       if (categoryFilter !== "ALL") query = query.eq("category_id", categoryFilter);
       if (search.trim()) query = query.ilike("complaint_number", `%${search.trim()}%`);
+      if (isStaff && user?.id) query = query.eq("created_by", user.id);
 
       const { data } = await query;
       const rows = (data as any as ComplaintRow[]) || [];

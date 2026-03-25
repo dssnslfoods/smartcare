@@ -52,7 +52,7 @@ export interface Database {
           category_id: string | null; problem_type_id: string | null; problem_sub_type_id: string | null;
           caller_id: string | null; description: string | null; status: string | null;
           priority: string | null; resolution: string | null; resolved_at: string | null;
-          created_at: string | null; updated_at: string | null;
+          created_at: string | null; updated_at: string | null; created_by: string | null;
         };
         Insert: {
           id?: string; complaint_number?: string | null; complaint_date?: string | null;
@@ -60,7 +60,7 @@ export interface Database {
           category_id?: string | null; problem_type_id?: string | null; problem_sub_type_id?: string | null;
           caller_id?: string | null; description?: string | null; status?: string | null;
           priority?: string | null; resolution?: string | null; resolved_at?: string | null;
-          created_at?: string | null; updated_at?: string | null;
+          created_at?: string | null; updated_at?: string | null; created_by?: string | null;
         };
         Update: {
           id?: string; complaint_number?: string | null; complaint_date?: string | null;
@@ -68,7 +68,7 @@ export interface Database {
           category_id?: string | null; problem_type_id?: string | null; problem_sub_type_id?: string | null;
           caller_id?: string | null; description?: string | null; status?: string | null;
           priority?: string | null; resolution?: string | null; resolved_at?: string | null;
-          created_at?: string | null; updated_at?: string | null;
+          created_at?: string | null; updated_at?: string | null; created_by?: string | null;
         };
       };
       statuses: {

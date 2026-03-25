@@ -43,7 +43,7 @@ const INITIAL_ACTION_ITEMS: ActionItem[] = [{ measure: "", responsible: "", due_
 const INITIAL_COST_ITEMS: CostItem[] = [{ item_name: "", amount: "" }];
 
 const INITIAL_FORM = {
-  complaint_number: "", complaint_date: format(new Date(), "yyyy-MM-dd"), company_id: "", branch_id: "",
+  complaint_number: "", complaint_date: "", company_id: "", branch_id: "",
   product_group_id: "", category_id: "", problem_type_id: "", problem_sub_type_id: "",
   caller_id: "", description: "", status: "", priority: "", root_cause_id: "",
   root_cause_ids: [] as string[],
@@ -66,7 +66,7 @@ const DEFAULT_PRIORITIES = [
 ];
 
 export default function ComplaintForm() {
-  const { role, userProfile } = useAuth();
+  const { role, userProfile, user } = useAuth();
   const isStaff = role === "staff";
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(INITIAL_FORM);
@@ -165,11 +165,15 @@ export default function ComplaintForm() {
   }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchRecent() {
-    const { data } = await supabase.from("complaints").select(`
-      id, complaint_number, complaint_date, status,
+    let query = supabase.from("complaints").select(`
+      id, complaint_number, complaint_date, status, created_by,
       companies:company_id(name), problem_types:problem_type_id(name),
       problem_sub_types:problem_sub_type_id(name)
     `).order("created_at", { ascending: false }).limit(5);
+    if (role === "staff" && user?.id) {
+      query = query.eq("created_by", user.id);
+    }
+    const { data } = await query;
     setRecentComplaints(data || []);
   }
 
@@ -395,6 +399,7 @@ export default function ComplaintForm() {
         ({ error } = await supabase.from("complaints").update(payload as any).eq("id", editingId));
         if (!error) { toast.success("แก้ไขข้อร้องเรียนสำเร็จ"); setEditingId(null); }
       } else {
+        if (user?.id) payload.created_by = user.id;
         ({ error } = await supabase.from("complaints").insert(payload as any));
         if (!error) toast.success("บันทึกข้อร้องเรียนสำเร็จ");
       }
