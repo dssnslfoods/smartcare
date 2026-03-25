@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import Footer from "@/components/Footer";
 
 function DatePickerInput({ value, onChange, placeholder }: { value: Date | undefined; onChange: (d: Date | undefined) => void; placeholder: string }) {
@@ -449,8 +450,12 @@ export default function ComplaintList() {
       a.href = url;
       const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
       a.download = `SmartCare_Complaints_${dateStr}.xlsx`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(`Export ล้มเหลว: ${err?.message || "เกิดข้อผิดพลาด"}`);
     } finally {
       setExporting(false);
     }
