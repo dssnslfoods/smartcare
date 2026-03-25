@@ -254,8 +254,8 @@ export default function CloseCaseAdjust() {
   // Load companies + statuses once
   useEffect(() => {
     supabase.from("companies").select("id, name").then(({ data }) => setCompanies(data || []));
-    supabase.from("complaints").select("status").then(({ data }) => {
-      setStatuses([...new Set((data || []).map(c => c.status).filter(Boolean) as string[])]);
+    supabase.from("statuses").select("name").order("sort_order", { ascending: true }).then(({ data }) => {
+      setStatuses((data || []).map(s => s.name).filter(Boolean) as string[]);
     });
   }, []);
 

@@ -748,16 +748,24 @@ function TableTab({ config, refs, onRefsRefresh }: TableTabProps) {
 
   // ── Export ────────────────────────────────────────────────────────────────────
   const handleExport = async () => {
-    let { data, error } = await (supabase
-      .from(config.tableName as any)
-      .select(config.fetchSelect) as any)
-      .order(config.orderBy || 'created_at', { ascending: config.orderAsc ?? false });
-
-    if (error) {
-      const retry = await (supabase.from(config.tableName as any).select('*') as any).limit(10000);
-      data = retry.data; error = retry.error;
+    // Paginate to bypass Supabase 1000-row default limit
+    const BATCH = 1000;
+    let allData: any[] = [];
+    let from = 0;
+    while (true) {
+      const { data: batch, error } = await (supabase
+        .from(config.tableName as any)
+        .select(config.fetchSelect) as any)
+        .order(config.orderBy || 'created_at', { ascending: config.orderAsc ?? false })
+        .range(from, from + BATCH - 1);
+      if (error) { toast({ title: 'Export ล้มเหลว', description: error.message, variant: 'destructive' }); return; }
+      allData = [...allData, ...(batch || [])];
+      if ((batch || []).length < BATCH) break;
+      from += BATCH;
     }
-    if (error) { toast({ title: 'Export ล้มเหลว', description: error.message, variant: 'destructive' }); return; }
+    const data = allData;
+    const error = null;
+    if (error) { toast({ title: 'Export ล้มเหลว', description: (error as any).message, variant: 'destructive' }); return; }
 
     const exportRows = (data || []).map((row: any) => config.toExportRow(row, refs));
     if (!exportRows.length) { toast({ title: 'ไม่มีข้อมูลสำหรับ Export', variant: 'destructive' }); return; }

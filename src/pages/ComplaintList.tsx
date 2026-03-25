@@ -139,8 +139,8 @@ export default function ComplaintList() {
       setCompanies(compRes.data || []);
       setCategories((catRes.data || []).filter(c => c.name));
 
-      const { data: statusData } = await supabase.from("complaints").select("status");
-      setStatuses([...new Set((statusData || []).map(c => c.status).filter(Boolean) as string[])]);
+      const { data: statusData } = await supabase.from("statuses").select("name").order("sort_order", { ascending: true });
+      setStatuses((statusData || []).map(s => s.name).filter(Boolean) as string[]);
     }
     fetchOptions();
   }, []);
@@ -218,8 +218,8 @@ export default function ComplaintList() {
   async function handleExport() {
     setExporting(true);
     try {
-      // Fetch ALL matching records (no pagination)
-      let query = supabase.from("complaints").select(`
+      // Fetch ALL matching records using pagination to bypass Supabase 1000-row default limit
+      const EXPORT_SELECT = `
         id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority,
         description, resolution, resolved_at, action_items, cost_items,
         companies:company_id(name),
@@ -230,16 +230,26 @@ export default function ComplaintList() {
         problem_sub_types:problem_sub_type_id(name),
         callers:caller_id(name),
         root_causes:root_cause_id(name)
-      `).order("complaint_date", { ascending: false });
-
-      if (companyFilter !== "ALL") query = query.eq("company_id", companyFilter);
-      if (statusFilter !== "ALL") query = query.eq("status", statusFilter);
-      if (categoryFilter !== "ALL") query = query.eq("category_id", categoryFilter);
-      if (search.trim()) query = query.ilike("complaint_number", `%${search.trim()}%`);
-      if (isStaff && user?.id) query = query.eq("created_by", user.id);
-
-      const { data } = await query;
-      const rows = (data as any as ComplaintRow[]) || [];
+      `;
+      const BATCH = 1000;
+      let allRows: ComplaintRow[] = [];
+      let from = 0;
+      while (true) {
+        let query = supabase.from("complaints").select(EXPORT_SELECT)
+          .order("complaint_date", { ascending: false })
+          .range(from, from + BATCH - 1);
+        if (companyFilter !== "ALL") query = query.eq("company_id", companyFilter);
+        if (statusFilter !== "ALL") query = query.eq("status", statusFilter);
+        if (categoryFilter !== "ALL") query = query.eq("category_id", categoryFilter);
+        if (search.trim()) query = query.ilike("complaint_number", `%${search.trim()}%`);
+        if (isStaff && user?.id) query = query.eq("created_by", user.id);
+        const { data } = await query;
+        const batch = (data as any as ComplaintRow[]) || [];
+        allRows = [...allRows, ...batch];
+        if (batch.length < BATCH) break;
+        from += BATCH;
+      }
+      const rows = allRows;
 
       const ExcelJS = (await import("exceljs")).default;
       const wb = new ExcelJS.Workbook();
