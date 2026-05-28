@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch, Repeat } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
 import OverviewTab from "@/components/dashboard/OverviewTab";
 import TrendsTab from "@/components/dashboard/TrendsTab";
 import ProblemsTab from "@/components/dashboard/ProblemsTab";
+import RecurringProblemsTab from "@/components/dashboard/RecurringProblemsTab";
 import GroupsTab from "@/components/dashboard/GroupsTab";
 import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
@@ -20,6 +21,7 @@ const TABS = [
   { id: "overview", label: "ภาพรวม", icon: LayoutDashboard },
   { id: "trends", label: "แนวโน้ม", icon: TrendingUp },
   { id: "problems", label: "ประเภทปัญหา", icon: AlertTriangle },
+  { id: "recurring", label: "ปัญหาซ้ำซาก", icon: Repeat },
   { id: "groups", label: "กลุ่มสินค้า", icon: Factory },
   { id: "performance", label: "ประสิทธิภาพ", icon: Timer },
   { id: "rootcause", label: "วิเคราะห์สาเหตุ", icon: GitBranch },
@@ -174,6 +176,7 @@ export default function Index() {
             {activeTab === "overview" && <OverviewTab data={data} />}
             {activeTab === "trends" && <TrendsTab data={data} />}
             {activeTab === "problems" && <ProblemsTab data={data} />}
+            {activeTab === "recurring" && <RecurringProblemsTab data={data} />}
             {activeTab === "groups" && <GroupsTab data={data} />}
             {activeTab === "performance" && <PerformanceTab data={data} />}
             {activeTab === "rootcause" && <RootCauseAnalysisTab />}

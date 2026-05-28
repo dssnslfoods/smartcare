@@ -143,39 +143,75 @@ export default function UserManagement() {
         if (roleError) throw roleError;
         toast.success("อัปเดตผู้ใช้สำเร็จ");
       } else {
-        if (!formEmail || !formPassword) {
-          toast.error("กรุณากรอกอีเมลและรหัสผ่าน");
-          setSaving(false);
-          return;
-        }
-        if (formPassword.length < 6) {
-          toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+        if (!formEmail) {
+          toast.error("กรุณากรอกอีเมล");
           setSaving(false);
           return;
         }
 
-        const ephemeralClient = createEphemeralSupabaseClient();
-        const { data: signUpData, error: signUpError } = await ephemeralClient.auth.signUp({
-          email: formEmail,
-          password: formPassword,
-          options: { emailRedirectTo: undefined },
-        });
+        const normalizedEmail = formEmail.trim().toLowerCase();
 
-        if (signUpError) {
-          const msg = signUpError.message;
-          if (msg.includes("invalid")) throw new Error("อีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง");
-          if (msg.includes("already")) throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
-          throw signUpError;
-        }
-        if (!signUpData.user || signUpData.user.identities?.length === 0) {
+        // Check if user_roles already has this email (true duplicate)
+        const { data: existingRole } = await supabase
+          .from("user_roles")
+          .select("id")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
+        if (existingRole) {
           throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
+        }
+
+        // Check if auth.users has the email (orphan from a previous failed attempt)
+        const { data: orphanUserId, error: rpcError } = await supabase
+          .rpc("get_auth_user_id_by_email", { p_email: normalizedEmail });
+
+        if (rpcError) {
+          throw new Error("ตรวจสอบอีเมลไม่สำเร็จ: " + rpcError.message);
+        }
+
+        let authUserId: string;
+
+        if (orphanUserId) {
+          // Reuse existing auth user, just create the missing user_roles row
+          authUserId = orphanUserId;
+          toast.info("พบบัญชีค้างจากครั้งก่อน — กำลังเชื่อมข้อมูลผู้ใช้");
+        } else {
+          // No auth user yet — create one
+          if (!formPassword) {
+            toast.error("กรุณากรอกรหัสผ่าน");
+            setSaving(false);
+            return;
+          }
+          if (formPassword.length < 6) {
+            toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+            setSaving(false);
+            return;
+          }
+
+          const ephemeralClient = createEphemeralSupabaseClient();
+          const { data: signUpData, error: signUpError } = await ephemeralClient.auth.signUp({
+            email: normalizedEmail,
+            password: formPassword,
+            options: { emailRedirectTo: undefined },
+          });
+
+          if (signUpError) {
+            const msg = signUpError.message;
+            if (msg.includes("invalid")) throw new Error("อีเมลไม่ถูกต้อง กรุณาใช้อีเมลจริง");
+            if (msg.includes("already")) throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
+            throw signUpError;
+          }
+          if (!signUpData.user || signUpData.user.identities?.length === 0) {
+            throw new Error("อีเมลนี้มีอยู่ในระบบแล้ว");
+          }
+          authUserId = signUpData.user.id;
         }
 
         const { error: roleError } = await supabase
           .from("user_roles")
           .insert({
-            user_id: signUpData.user.id,
-            email: formEmail,
+            user_id: authUserId,
+            email: normalizedEmail,
             ...profileFields,
             is_active: true, // Default to active for new users
           });
@@ -186,7 +222,7 @@ export default function UserManagement() {
           }
           throw roleError;
         }
-        toast.success("เพิ่มผู้ใช้สำเร็จ");
+        toast.success(orphanUserId ? "เชื่อมข้อมูลผู้ใช้สำเร็จ" : "เพิ่มผู้ใช้สำเร็จ");
       }
       setDialogOpen(false);
       loadData();

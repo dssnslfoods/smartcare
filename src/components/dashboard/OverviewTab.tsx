@@ -14,8 +14,9 @@ const STATUS_COLORS: Record<string, string> = {
   "ปิดเป็น RD": "#fbbf24",
   "คาดปิดผู้ผลิต": "#0ea5e9",
   "อยู่ระหว่างดำเนินการ": "#8b5cf6",
+  "Call ขาเข้า": "#06b6d4",
 };
-const STATUS_FALLBACK = ["#22c55e", "#ef4444", "#fbbf24", "#0ea5e9", "#8b5cf6"];
+const STATUS_FALLBACK = ["#06b6d4", "#22c55e", "#ef4444", "#fbbf24", "#0ea5e9", "#8b5cf6", "#f97316", "#ec4899"];
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899"];
 
 const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };

@@ -10,6 +10,15 @@ import { useTTS } from "@/hooks/useTTS";
 const COLORS = ["#ef4444", "#f59e0b", "#0ea5e9", "#8b5cf6", "#22c55e", "#06b6d4", "#f97316", "#ec4899"];
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#a855f7", "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"];
 
+// Color scale for "อัตราปิดเคสผู้ผลิต" — high rate = manufacturer fault more often = BAD (red)
+function getCloseRateColor(rate: number): string {
+  if (rate >= 80) return "#ef4444"; // 80-100%: แดง — แย่มาก
+  if (rate >= 60) return "#f97316"; // 60-79%:  ส้ม — แย่
+  if (rate >= 40) return "#eab308"; // 40-59%:  เหลือง — ปานกลาง
+  if (rate >= 20) return "#84cc16"; // 20-39%:  เขียวมะนาว — ค่อนข้างดี
+  return "#22c55e";                  // 0-19%:   เขียว — ดี
+}
+
 interface Props { data: CompanyData }
 
 const tooltipStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 8 };
@@ -34,7 +43,7 @@ export default function ProblemsTab({ data }: Props) {
   const totalProblems = problemData.reduce((s, d) => s + d.value, 0);
   const closeRateData = Object.entries(data.close_rate_by_type).map(([name, v]) => ({
     name, rate: v.rate, total: v.total,
-    fill: v.rate >= 70 ? "#22c55e" : v.rate >= 40 ? "#fbbf24" : "#ef4444"
+    fill: getCloseRateColor(v.rate)
   }));
   const subProblemData = Object.entries(data.sub_problem).map(([name, value]) => ({
     name: name.length > 30 ? name.substring(0, 30) + "..." : name, value
