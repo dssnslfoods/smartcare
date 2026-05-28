@@ -1,7 +1,8 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine
 } from "recharts";
-import { Timer, BarChart3, Target, Zap } from "lucide-react";
+import { Timer, BarChart3, Target, Zap, Info } from "lucide-react";
+import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CompanyData } from "@/data/mockData";
 import TTSButton from "./TTSButton";
 import { useTTS } from "@/hooks/useTTS";
@@ -84,36 +85,91 @@ export default function PerformanceTab({ data }: Props) {
     <div className="space-y-5 animate-fade-in">
       {/* Performance Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="kpi-card py-3 text-center">
-          <div className="kpi-icon-badge bg-sky-500/15 mx-auto mb-2">
-            <Timer className="w-4 h-4 text-sky-400" />
-          </div>
-          <div className="text-2xl font-bold text-sky-400">{data.kpi.avg_response_days}</div>
-          <div className="text-[11px] text-muted-foreground">วันเฉลี่ย</div>
-        </div>
-        <div className="kpi-card py-3 text-center">
-          <div className="kpi-icon-badge bg-emerald-500/15 mx-auto mb-2">
-            <Zap className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-emerald-400">{data.kpi.median_response_days}</div>
-          <div className="text-[11px] text-muted-foreground">มัธยฐาน (วัน)</div>
-        </div>
-        <div className="kpi-card py-3 text-center">
-          <div className="kpi-icon-badge bg-amber-500/15 mx-auto mb-2">
-            <Target className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className={`text-2xl font-bold ${slaRate >= 80 ? "text-emerald-400" : slaRate >= 60 ? "text-amber-400" : "text-red-400"}`}>
-            {slaRate}%
-          </div>
-          <div className="text-[11px] text-muted-foreground">SLA Compliance ({SLA_TARGET_DAYS} วัน)</div>
-        </div>
-        <div className="kpi-card py-3 text-center">
-          <div className="kpi-icon-badge bg-violet-500/15 mx-auto mb-2">
-            <BarChart3 className="w-4 h-4 text-violet-400" />
-          </div>
-          <div className="text-2xl font-bold text-violet-400">{bestCat?.avg || "-"}</div>
-          <div className="text-[11px] text-muted-foreground">เร็วสุด ({bestCat?.name || "-"})</div>
-        </div>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <div className="kpi-card py-3 text-center relative cursor-help">
+              <Info className="w-3 h-3 text-muted-foreground/40 absolute top-2 right-2" />
+              <div className="kpi-icon-badge bg-sky-500/15 mx-auto mb-2">
+                <Timer className="w-4 h-4 text-sky-400" />
+              </div>
+              <div className="text-2xl font-bold text-sky-400">{data.kpi.avg_response_days}</div>
+              <div className="text-[11px] text-muted-foreground">วันเฉลี่ย</div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-semibold mb-1">วันเฉลี่ยในการตอบ Complaint</p>
+            <p className="text-xs">
+              ค่าเฉลี่ยจำนวนวันตั้งแต่ <strong>วันที่แจ้ง</strong> จนถึง <strong>วันที่ปิดเคส</strong>
+              {" "}(เฉพาะเคสที่ปิดแล้ว) — บ่งบอกความเร็วในการตอบสนองโดยรวม
+            </p>
+          </TooltipContent>
+        </UITooltip>
+
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <div className="kpi-card py-3 text-center relative cursor-help">
+              <Info className="w-3 h-3 text-muted-foreground/40 absolute top-2 right-2" />
+              <div className="kpi-icon-badge bg-emerald-500/15 mx-auto mb-2">
+                <Zap className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="text-2xl font-bold text-emerald-400">{data.kpi.median_response_days}</div>
+              <div className="text-[11px] text-muted-foreground">มัธยฐาน (วัน)</div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-semibold mb-1">ค่ามัธยฐาน (Median) เวลาตอบ</p>
+            <p className="text-xs">
+              ค่ากลางของจำนวนวันที่ใช้แก้เคส — <strong>ครึ่งหนึ่งของเคสปิดเร็วกว่าค่านี้ อีกครึ่งช้ากว่า</strong>
+              {" "}สะท้อนเวลาตอบจริงได้ดีกว่าค่าเฉลี่ยเมื่อมีบางเคสค้างนานผิดปกติ
+            </p>
+          </TooltipContent>
+        </UITooltip>
+
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <div className="kpi-card py-3 text-center relative cursor-help">
+              <Info className="w-3 h-3 text-muted-foreground/40 absolute top-2 right-2" />
+              <div className="kpi-icon-badge bg-amber-500/15 mx-auto mb-2">
+                <Target className="w-4 h-4 text-amber-400" />
+              </div>
+              <div className={`text-2xl font-bold ${slaRate >= 80 ? "text-emerald-400" : slaRate >= 60 ? "text-amber-400" : "text-red-400"}`}>
+                {slaRate}%
+              </div>
+              <div className="text-[11px] text-muted-foreground">SLA Compliance ({SLA_TARGET_DAYS} วัน)</div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-semibold mb-1">SLA Compliance</p>
+            <p className="text-xs mb-1">
+              % ของเคสที่ <strong>ปิดได้ภายใน {SLA_TARGET_DAYS} วัน</strong> (เป้าหมาย SLA)
+            </p>
+            <p className="text-xs text-muted-foreground">
+              เกณฑ์สี: <span className="text-emerald-400">≥ 80% ดี</span> ·{" "}
+              <span className="text-amber-400">60–79% เฝ้าระวัง</span> ·{" "}
+              <span className="text-red-400">&lt; 60% ต้องปรับปรุง</span>
+            </p>
+          </TooltipContent>
+        </UITooltip>
+
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <div className="kpi-card py-3 text-center relative cursor-help">
+              <Info className="w-3 h-3 text-muted-foreground/40 absolute top-2 right-2" />
+              <div className="kpi-icon-badge bg-violet-500/15 mx-auto mb-2">
+                <BarChart3 className="w-4 h-4 text-violet-400" />
+              </div>
+              <div className="text-2xl font-bold text-violet-400">{bestCat?.avg || "-"}</div>
+              <div className="text-[11px] text-muted-foreground">เร็วสุด ({bestCat?.name || "-"})</div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-semibold mb-1">หมวดหมู่ที่ตอบเร็วที่สุด</p>
+            <p className="text-xs">
+              ตัวเลขคือ <strong>วันเฉลี่ย</strong> ของหมวดที่ตอบเร็วที่สุด —{" "}
+              ใช้เป็นเกณฑ์เทียบกับหมวดอื่น (Benchmark) เพื่อหา best practice
+            </p>
+          </TooltipContent>
+        </UITooltip>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
