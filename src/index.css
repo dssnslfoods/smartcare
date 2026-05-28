@@ -372,3 +372,34 @@
     background: hsl(220 15% 35%);
   }
 }
+
+/* ====================== Print styles for Executive Brief ====================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+  html, body {
+    background: white !important;
+    color: black !important;
+    font-family: 'Sarabun', sans-serif !important;
+  }
+  body * { visibility: hidden; }
+  #brief-report, #brief-report * { visibility: visible; }
+  #brief-report {
+    position: absolute !important;
+    inset: 0 !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+  }
+  .brief-report .text-muted-foreground { color: #4b5563 !important; }
+  .brief-report section { page-break-inside: avoid; }
+  .brief-report table { border-collapse: collapse; }
+  .brief-report .glass-card,
+  .brief-report .kpi-card { background: transparent !important; }
+}

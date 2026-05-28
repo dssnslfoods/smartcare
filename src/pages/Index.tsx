@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch, Repeat } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch, Repeat, Sparkles } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -74,6 +74,17 @@ export default function Index() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {!loading && count > 0 && (
+              <Link
+                to="/executive-brief"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-500/40
+                  text-xs font-medium text-violet-300 hover:text-violet-200 hover:border-violet-500/70
+                  hover:bg-violet-500/10 transition-all"
+                title="สร้างรายงานสรุปด้วย AI"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Executive Summary
+              </Link>
+            )}
             {!loading && count > 0 && (
               <button
                 onClick={() => setTvMode(true)}
