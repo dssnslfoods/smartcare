@@ -33,8 +33,10 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   permissions: RolePermission[];
   loading: boolean;
+  mustChangePassword: boolean;
   hasPermission: (resource: Resource) => boolean;
   refreshPermissions: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
@@ -47,23 +49,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [permissions, setPermissions] = useState<RolePermission[]>([]);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function fetchRoleAndProfile(userId: string) {
     try {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role, company_id, branch_id, full_name, department, is_active")
+        .select("role, company_id, branch_id, full_name, department, is_active, must_change_password")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) {
         console.warn("Failed to fetch role:", error.message);
         setRole(null);
         setUserProfile(null);
+        setMustChangePassword(false);
         return null;
       }
       const fetchedRole = (data?.role as AppRole) || null;
-      
+
       if (data && data.is_active === false) {
         toast.error("บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
         await supabase.auth.signOut();
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setRole(fetchedRole);
+      setMustChangePassword(data?.must_change_password === true);
       setUserProfile(data ? {
         company_id: data.company_id,
         branch_id: data.branch_id,
@@ -82,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn("fetchRoleAndProfile error:", err);
       setRole(null);
       setUserProfile(null);
+      setMustChangePassword(false);
       return null;
     }
   }
@@ -116,6 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetchPermissions(role);
     }
   }, [role]);
+
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchRoleAndProfile(user.id);
+    }
+  }, [user]);
 
   const hasPermission = useCallback((resource: Resource): boolean => {
     if (role === "admin") return true;
@@ -166,8 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, user, role, userProfile, permissions, loading,
-      hasPermission, refreshPermissions, signIn, signOut,
+      session, user, role, userProfile, permissions, loading, mustChangePassword,
+      hasPermission, refreshPermissions, refreshProfile, signIn, signOut,
     }}>
       {children}
     </AuthContext.Provider>
