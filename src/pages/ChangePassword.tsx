@@ -8,6 +8,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// Must be at module level — defining inside the parent causes remount on every render (focus loss)
+function PasswordInput({
+  id, label, value, onChange, show, onToggle, placeholder,
+}: {
+  id: string; label: string; value: string;
+  onChange: (v: string) => void; show: boolean;
+  onToggle: () => void; placeholder: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="pr-10"
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={onToggle}
+          tabIndex={-1}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ChangePassword() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -60,39 +94,6 @@ export default function ChangePassword() {
     } finally {
       setSaving(false);
     }
-  }
-
-  function PasswordInput({
-    id, label, value, onChange, show, onToggle, placeholder,
-  }: {
-    id: string; label: string; value: string;
-    onChange: (v: string) => void; show: boolean;
-    onToggle: () => void; placeholder: string;
-  }) {
-    return (
-      <div className="space-y-2">
-        <Label htmlFor={id}>{label}</Label>
-        <div className="relative">
-          <Input
-            id={id}
-            type={show ? "text" : "password"}
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            className="pr-10"
-            autoComplete="off"
-          />
-          <button
-            type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            onClick={onToggle}
-            tabIndex={-1}
-          >
-            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-      </div>
-    );
   }
 
   return (
