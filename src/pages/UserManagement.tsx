@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, Users, Loader2, Shield, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Loader2, Shield, AlertTriangle, KeyRound, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserRecord {
@@ -51,8 +51,12 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserRecord | null>(null);
+  const [resetTargetUser, setResetTargetUser] = useState<UserRecord | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Form state
@@ -121,6 +125,35 @@ export default function UserManagement() {
   function openDelete(u: UserRecord) {
     setDeletingUser(u);
     setDeleteDialogOpen(true);
+  }
+
+  function openReset(u: UserRecord) {
+    setResetTargetUser(u);
+    setResetPassword("");
+    setShowResetPassword(false);
+    setResetDialogOpen(true);
+  }
+
+  async function handleResetPassword() {
+    if (!resetTargetUser) return;
+    if (resetPassword.length < 6) {
+      toast.error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+        body: { userId: resetTargetUser.user_id, newPassword: resetPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`รีเซ็ตรหัสผ่านสำหรับ ${resetTargetUser.full_name || resetTargetUser.email} สำเร็จ`);
+      setResetDialogOpen(false);
+    } catch (err: any) {
+      toast.error("รีเซ็ตไม่สำเร็จ: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSave() {
@@ -213,7 +246,8 @@ export default function UserManagement() {
             user_id: authUserId,
             email: normalizedEmail,
             ...profileFields,
-            is_active: true, // Default to active for new users
+            is_active: true,
+            must_change_password: true, // Force password change on first login
           });
 
         if (roleError) {
@@ -340,14 +374,24 @@ export default function UserManagement() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" onClick={() => openEdit(u)} className="h-8 w-8 p-0">
+                              <Button variant="ghost" size="sm" onClick={() => openEdit(u)} className="h-8 w-8 p-0" title="แก้ไข">
                                 <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost" size="sm"
+                                onClick={() => openReset(u)}
+                                disabled={!u.user_id}
+                                className="h-8 w-8 p-0 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                                title="รีเซ็ตรหัสผ่าน"
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="ghost" size="sm"
                                 onClick={() => openDelete(u)}
                                 disabled={u.user_id === currentUser?.id}
                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                title="ลบ"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -463,6 +507,53 @@ export default function UserManagement() {
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {editingUser ? "บันทึก" : "เพิ่มผู้ใช้"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-amber-500" />
+              รีเซ็ตรหัสผ่าน
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <p className="text-sm text-muted-foreground">
+              ตั้งรหัสผ่านชั่วคราวสำหรับ{" "}
+              <strong className="text-foreground">{resetTargetUser?.full_name || resetTargetUser?.email}</strong>
+              {" "}— ผู้ใช้จะต้องเปลี่ยนรหัสผ่านใหม่เมื่อเข้าสู่ระบบครั้งถัดไป
+            </p>
+            <div className="space-y-2">
+              <Label>รหัสผ่านชั่วคราว</Label>
+              <div className="relative">
+                <Input
+                  type={showResetPassword ? "text" : "password"}
+                  value={resetPassword}
+                  onChange={e => setResetPassword(e.target.value)}
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  className="pr-10"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowResetPassword(v => !v)}
+                  tabIndex={-1}
+                >
+                  {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>ยกเลิก</Button>
+            <Button onClick={handleResetPassword} disabled={saving} className="bg-amber-500 hover:bg-amber-400 text-white">
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              รีเซ็ตรหัสผ่าน
             </Button>
           </DialogFooter>
         </DialogContent>
