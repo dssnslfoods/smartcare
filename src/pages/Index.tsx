@@ -140,6 +140,7 @@ export default function Index() {
           onCategoryChange={setCategory}
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
+          onYearChange={(from, to) => { setDateFrom(from); setDateTo(to); }}
           companyDisabled={isStaff}
           branchDisabled={isStaff}
           onReset={() => {
@@ -190,7 +191,16 @@ export default function Index() {
             {activeTab === "recurring" && <RecurringProblemsTab data={data} />}
             {activeTab === "groups" && <GroupsTab data={data} />}
             {activeTab === "performance" && <PerformanceTab data={data} />}
-            {activeTab === "rootcause" && <RootCauseAnalysisTab />}
+            {activeTab === "rootcause" && (
+              <RootCauseAnalysisTab
+                companyId={companyId}
+                branchId={branchId}
+                status={status}
+                category={category}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+              />
+            )}
             {activeTab === "deep" && <DeepAnalysisTab data={data} />}
             {activeTab === "map" && (
               <MapTab

@@ -45,7 +45,23 @@ function getRcColor(name: string, idx: number): string {
   return COLORS[idx % COLORS.length];
 }
 
-export default function RootCauseAnalysisTab() {
+interface RootCauseAnalysisTabProps {
+  companyId?: string;
+  branchId?: string;
+  status?: string;
+  category?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export default function RootCauseAnalysisTab({
+  companyId = "ALL",
+  branchId = "ALL",
+  status = "ALL",
+  category = "ALL",
+  dateFrom = "",
+  dateTo = "",
+}: RootCauseAnalysisTabProps) {
   const [loading, setLoading] = useState(true);
   const [rootCauses, setRootCauses] = useState<RootCause[]>([]);
   const [complaints, setComplaints] = useState<ComplaintRC[]>([]);
@@ -58,11 +74,9 @@ export default function RootCauseAnalysisTab() {
       setLoading(true);
       const PAGE = 1000;
 
-      // Fetch root causes (small table, no pagination needed)
       const rcRes = await supabase.from("root_causes").select("id, name, code").order("sort_order");
       setRootCauses(rcRes.data || []);
 
-      // Fetch complaints with pagination to bypass Supabase 1,000-row limit
       const selectCols = `
         id, complaint_number, complaint_date, root_cause_ids, root_cause_id, status,
         categories:category_id(name),
@@ -72,11 +86,20 @@ export default function RootCauseAnalysisTab() {
       let allRaw: any[] = [];
       let pageNum = 0;
       while (true) {
-        const { data: chunk, error } = await supabase
+        let q = supabase
           .from("complaints")
           .select(selectCols)
           .order("complaint_date", { ascending: false })
           .range(pageNum * PAGE, (pageNum + 1) * PAGE - 1);
+
+        if (companyId !== "ALL") q = q.eq("company_id", companyId);
+        if (branchId !== "ALL") q = q.eq("branch_id", branchId);
+        if (status !== "ALL") q = q.eq("status", status);
+        if (category !== "ALL") q = q.eq("category_id", category);
+        if (dateFrom) q = q.gte("complaint_date", dateFrom);
+        if (dateTo) q = q.lte("complaint_date", dateTo + "T23:59:59");
+
+        const { data: chunk, error } = await q;
         if (error || !chunk || chunk.length === 0) break;
         allRaw = allRaw.concat(chunk);
         if (chunk.length < PAGE) break;
@@ -101,7 +124,7 @@ export default function RootCauseAnalysisTab() {
       setLoading(false);
     }
     fetchAll();
-  }, []);
+  }, [companyId, branchId, status, category, dateFrom, dateTo]);
 
   // Build root cause name map
   const rcMap = useMemo(() => {
