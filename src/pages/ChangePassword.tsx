@@ -79,12 +79,11 @@ export default function ChangePassword() {
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) throw updateError;
 
-      // Clear the flag
-      const { error: flagError } = await supabase
-        .from("user_roles")
-        .update({ must_change_password: false })
-        .eq("user_id", user!.id);
+      // Clear the flag via SECURITY DEFINER RPC — a direct UPDATE is blocked by RLS for
+      // non-admin users and fails silently (0 rows, no error)
+      const { data: cleared, error: flagError } = await supabase.rpc("clear_must_change_password");
       if (flagError) throw flagError;
+      if (!cleared) throw new Error("ไม่สามารถอัปเดตสถานะบัญชีได้ กรุณาติดต่อผู้ดูแลระบบ");
 
       await refreshProfile();
       toast.success("เปลี่ยนรหัสผ่านสำเร็จ");
