@@ -24,9 +24,47 @@ interface FilterBarProps {
   onCategoryChange: (v: string) => void;
   onDateFromChange: (v: string) => void;
   onDateToChange: (v: string) => void;
+  onYearChange?: (from: string, to: string) => void;
   companyDisabled?: boolean;
   branchDisabled?: boolean;
   onReset?: () => void;
+}
+
+// Generate year list from 2024 to current year
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from(
+  { length: CURRENT_YEAR - 2024 + 2 },
+  (_, i) => 2024 + i
+);
+
+function YearPicker({
+  value, onChange,
+}: { value: string; onChange: (from: string, to: string) => void }) {
+  const selected = value ? new Date(value + "-01-01").getFullYear() : "";
+
+  function handleSelect(year: string) {
+    if (!year) { onChange("", ""); return; }
+    const y = parseInt(year);
+    onChange(`${y}-01-01`, `${y}-12-31`);
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">ปี</label>
+      <div className="relative">
+        <select
+          className="filter-select pr-7 appearance-none"
+          value={selected}
+          onChange={e => handleSelect(e.target.value)}
+        >
+          <option value="">ทั้งหมด</option>
+          {YEAR_OPTIONS.map(y => (
+            <option key={y} value={y}>{y + 543} ({y})</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
 }
 
 function DatePicker({
@@ -80,7 +118,7 @@ export default function FilterBar({
   companies, branches, statuses, categories,
   companyId, branchId, status, category, dateFrom, dateTo,
   onCompanyChange, onBranchChange, onStatusChange, onCategoryChange,
-  onDateFromChange, onDateToChange,
+  onDateFromChange, onDateToChange, onYearChange,
   companyDisabled, branchDisabled, onReset,
 }: FilterBarProps) {
   const hasActiveFilter = (
@@ -132,6 +170,9 @@ export default function FilterBar({
           </select>
         </div>
 
+        {onYearChange && (
+          <YearPicker value={dateFrom} onChange={onYearChange} />
+        )}
         <DatePicker label="ตั้งแต่" value={dateFrom} onChange={onDateFromChange} placeholder="เลือกวันเริ่ม" />
         <DatePicker label="ถึงวันที่" value={dateTo} onChange={onDateToChange} placeholder="เลือกวันสิ้นสุด" />
 
