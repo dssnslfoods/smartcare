@@ -30,7 +30,7 @@ interface Pattern {
   spanDays: number;
   perMonth: number;
   closedByMaker: number;   // จำนวนเคสที่ "ปิดผู้ผลิต"
-  closeRate: number;       // % ปิดผู้ผลิต (ความผิดผู้ผลิต)
+  closeRate: number;       // % ปิดผู้ผลิต (ความผิดเป็นของผู้ผลิต)
   isActive: boolean;
   ids: string[];
 }
@@ -92,7 +92,7 @@ function buildMonthlySeries(complaints: any[]): { series: MonthPoint[]; slope: n
   return { series, slope };
 }
 
-// ความรุนแรง: ยิ่งซ้ำบ่อย + ความผิดผู้ผลิตสูง = ยิ่งแย่ (แดง)
+// ความรุนแรง: ยิ่งซ้ำบ่อย + ปิดผู้ผลิตสูง = ยิ่งแย่ (แดง)
 function severityColor(count: number, maxCount: number): string {
   const ratio = maxCount > 0 ? count / maxCount : 0;
   if (ratio >= 0.8) return "#ef4444"; // แดง
@@ -311,7 +311,7 @@ export default function RecurringProblemsTab({ data }: Props) {
                 <TableHead>ปัญหาย่อย</TableHead>
                 <TableHead className="text-center">ครั้ง</TableHead>
                 <TableHead className="text-center">ความถี่/เดือน</TableHead>
-                <TableHead className="text-center">% ผิดผู้ผลิต</TableHead>
+                <TableHead className="text-center">% ปิดผู้ผลิต</TableHead>
                 <TableHead className="text-center">เกิดล่าสุด</TableHead>
                 <TableHead className="text-center">สถานะ</TableHead>
               </TableRow>
@@ -387,7 +387,7 @@ export default function RecurringProblemsTab({ data }: Props) {
                 {topPattern.subProblem !== "-" && <> ({topPattern.subProblem})</>}
                 {" "}ในกลุ่ม <strong>{topPattern.group}</strong> เกิดซ้ำถึง{" "}
                 <span className="text-orange-400 font-semibold">{topPattern.count} ครั้ง</span>
-                {" "}โดยเป็นความผิดผู้ผลิต <span className="text-red-400 font-semibold">{topPattern.closeRate}%</span>
+                {" "}โดยปิดผู้ผลิต <span className="text-red-400 font-semibold">{topPattern.closeRate}%</span>
                 {topPattern.isActive && <> และ<span className="text-red-400">ยังเกิดอยู่</span></>}
               </p>
             </div>

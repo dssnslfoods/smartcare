@@ -297,7 +297,7 @@ export default function ExecutiveBrief() {
             <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
               <MetricCard label="Complaint ทั้งหมด" value={stats.current.total} unit="เคส"
                 change={change} prev={stats.previous.total} />
-              <MetricCard label="ผิดผู้ผลิต" value={stats.current.closeRate} unit="%"
+              <MetricCard label="ปิดผู้ผลิต" value={stats.current.closeRate} unit="%"
                 sub={`${stats.current.closedMaker} เคส`}
                 tone={stats.current.closeRate >= 60 ? "bad" : stats.current.closeRate >= 40 ? "warn" : "good"} />
               <MetricCard label="เคสค้าง" value={stats.current.notClosed} unit="เคส"
@@ -363,7 +363,7 @@ export default function ExecutiveBrief() {
                         <th className="text-left py-2 w-8">#</th>
                         <th className="text-left py-2">ประเภทปัญหา</th>
                         <th className="text-right py-2">จำนวน</th>
-                        <th className="text-right py-2">% ผิดผู้ผลิต</th>
+                        <th className="text-right py-2">% ปิดผู้ผลิต</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -395,7 +395,7 @@ export default function ExecutiveBrief() {
                         <th className="text-left py-2 w-8">#</th>
                         <th className="text-left py-2">รายละเอียด</th>
                         <th className="text-right py-2">ครั้ง</th>
-                        <th className="text-right py-2">% ผิดผู้ผลิต</th>
+                        <th className="text-right py-2">% ปิดผู้ผลิต</th>
                       </tr>
                     </thead>
                     <tbody>

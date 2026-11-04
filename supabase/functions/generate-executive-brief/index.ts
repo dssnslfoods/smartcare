@@ -142,6 +142,7 @@ function buildPrompt(stats: AggregatedStats): string {
 สำคัญ:
 - เขียนสำหรับผู้บริหาร อ่านได้ใน 3 นาที
 - "ปิดผู้ผลิต" หมายถึง ตัดสินแล้วว่าความผิดเป็นของผู้ผลิต (ยิ่งสัดส่วนสูง = ผู้ผลิตยิ่งบกพร่อง = แย่)
+- ใช้คำว่า "ปิดผู้ผลิต" เสมอ ห้ามใช้คำว่า "ผิดผู้ผลิต" หรือ "ความผิดผู้ผลิต"
 - ตอบกลับเป็น JSON เท่านั้น ไม่มี markdown code fence
 
 ข้อมูลงวดปัจจุบัน (${period.label}):
@@ -153,20 +154,20 @@ function buildPrompt(stats: AggregatedStats): string {
 - ระยะเวลาตอบเฉลี่ย: ${current.avgResponse} วัน
 
 หมวดหมู่ (Top 5):
-${current.byCategory.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ผิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
+${current.byCategory.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ปิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
 
 กลุ่มสินค้า (Top 5):
-${current.byProductGroup.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ผิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
+${current.byProductGroup.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ปิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
 
 ประเภทปัญหา (Top 5):
-${current.byProblem.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ผิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
+${current.byProblem.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ปิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
 
 ปัญหาย่อยที่พบมาก (Top 5):
-${current.bySubProblem.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ผิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
+${current.bySubProblem.slice(0, 5).map((c: any, i: number) => `${i + 1}. ${c.name}: ${c.count} เคส (ปิดผู้ผลิต ${c.closeRate}%)`).join("\n")}
 
 ปัญหาซ้ำซากในงวดนี้ (Top 5):
 ${current.recurring.length === 0 ? "ไม่พบปัญหาซ้ำซากในงวดนี้" :
-current.recurring.map((p: any, i: number) => `${i + 1}. ${p.group} › ${p.problem} › ${p.sub}: ${p.count} ครั้ง (ผิดผู้ผลิต ${p.closeRate}%)`).join("\n")}
+current.recurring.map((p: any, i: number) => `${i + 1}. ${p.group} › ${p.problem} › ${p.sub}: ${p.count} ครั้ง (ปิดผู้ผลิต ${p.closeRate}%)`).join("\n")}
 
 จงตอบกลับเป็น JSON ตามโครงสร้างนี้เท่านั้น:
 {
@@ -192,16 +193,16 @@ function buildTemplateBrief(stats: AggregatedStats) {
   return {
     executiveSummary:
       `ใน${period.label} ขอบเขต ${scope.company} · ${scope.branch} มี complaint รวม ${current.total} เคส ` +
-      `(${changeText}จากงวดก่อน ${previous.total} เคส) โดยมีอัตราการปิดเคสที่ความผิดผู้ผลิต ${current.closeRate}% ` +
+      `(${changeText}จากงวดก่อน ${previous.total} เคส) โดยมีอัตราการปิดเคสที่ปิดผู้ผลิต ${current.closeRate}% ` +
       `เวลาตอบกลับเฉลี่ย ${current.avgResponse} วัน เคสที่ยังคงเปิดอยู่ ${current.notClosed} เคส`,
     highlights: [
       current.closeRate < 50
-        ? `อัตราความผิดผู้ผลิตต่ำกว่า 50% (${current.closeRate}%) แสดงว่าผู้ผลิตยังอยู่ในเกณฑ์ยอมรับได้`
+        ? `อัตราปิดผู้ผลิตต่ำกว่า 50% (${current.closeRate}%) แสดงว่าผู้ผลิตยังอยู่ในเกณฑ์ยอมรับได้`
         : `การปิดเคสภายในระบบทำได้ ${current.closedMaker} เคส`,
       `เวลาตอบเฉลี่ย ${current.avgResponse} วัน`,
     ],
     concerns: [
-      top ? `ประเภทปัญหา "${top.name}" พบมากสุด ${top.count} เคส (ผิดผู้ผลิต ${top.closeRate}%)` : "",
+      top ? `ประเภทปัญหา "${top.name}" พบมากสุด ${top.count} เคส (ปิดผู้ผลิต ${top.closeRate}%)` : "",
       topSub ? `ปัญหาย่อย "${topSub.name}" เกิดบ่อย ${topSub.count} เคส` : "",
       topRecurring ? `ปัญหาซ้ำซาก: ${topRecurring.group} › ${topRecurring.sub} เกิด ${topRecurring.count} ครั้ง` : "",
       current.notClosed > 10 ? `มีเคสค้าง ${current.notClosed} เคส ควรเร่งปิด` : "",
