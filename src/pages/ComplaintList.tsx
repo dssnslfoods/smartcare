@@ -111,6 +111,7 @@ export default function ComplaintList() {
   // Filters
   const [search, setSearch] = useState("");
   const [companyFilter, setCompanyFilter] = useState("ALL");
+  const [branchFilter, setBranchFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
@@ -130,16 +131,19 @@ export default function ComplaintList() {
 
   // Filter options
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string; company_id: string | null }[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     async function fetchOptions() {
-      const [compRes, catRes] = await Promise.all([
+      const [compRes, catRes, branchRes] = await Promise.all([
         supabase.from("companies").select("id, name"),
         supabase.from("categories").select("id, name").order("name"),
+        supabase.from("branches").select("id, name, company_id").order("name"),
       ]);
       setCompanies(compRes.data || []);
+      setBranches((branchRes.data || []).filter(b => b.name));
       setCategories((catRes.data || []).filter(c => c.name));
 
       const { data: statusData } = await supabase.from("statuses").select("name").order("sort_order", { ascending: true });
@@ -154,6 +158,10 @@ export default function ComplaintList() {
       setCompanyFilter(userProfile.company_id);
     }
   }, [isStaff, userProfile]);
+
+  // Branches available for the selected company; reset branch when company changes
+  const branchOptions = companyFilter === "ALL" ? branches : branches.filter(b => b.company_id === companyFilter);
+  useEffect(() => { setBranchFilter("ALL"); }, [companyFilter]);
 
   useEffect(() => {
     async function fetchData() {
@@ -176,6 +184,10 @@ export default function ComplaintList() {
       if (companyFilter !== "ALL") {
         countQuery = countQuery.eq("company_id", companyFilter);
         dataQuery = dataQuery.eq("company_id", companyFilter);
+      }
+      if (branchFilter !== "ALL") {
+        countQuery = countQuery.eq("branch_id", branchFilter);
+        dataQuery = dataQuery.eq("branch_id", branchFilter);
       }
       if (statusFilter !== "ALL") {
         countQuery = countQuery.eq("status", statusFilter);
@@ -219,10 +231,10 @@ export default function ComplaintList() {
       setLoading(false);
     }
     fetchData();
-  }, [page, pageSize, companyFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo, closeMonthFilter, closeYearFilter, isStaff, user?.id]);
+  }, [page, pageSize, companyFilter, branchFilter, statusFilter, categoryFilter, search, sortBy, sortOrder, dateFrom, dateTo, closeMonthFilter, closeYearFilter, isStaff, user?.id]);
 
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [companyFilter, statusFilter, categoryFilter, search, pageSize, sortBy, sortOrder, dateFrom, dateTo, closeMonthFilter, closeYearFilter]);
+  useEffect(() => { setPage(0); }, [companyFilter, branchFilter, statusFilter, categoryFilter, search, pageSize, sortBy, sortOrder, dateFrom, dateTo, closeMonthFilter, closeYearFilter]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -250,6 +262,7 @@ export default function ComplaintList() {
           .order("complaint_date", { ascending: false })
           .range(from, from + BATCH - 1);
         if (companyFilter !== "ALL") query = query.eq("company_id", companyFilter);
+        if (branchFilter !== "ALL") query = query.eq("branch_id", branchFilter);
         if (statusFilter !== "ALL") query = query.eq("status", statusFilter);
         if (categoryFilter !== "ALL") query = query.eq("category_id", categoryFilter);
         if (search.trim()) query = query.ilike("complaint_number", `%${search.trim()}%`);
@@ -338,6 +351,7 @@ export default function ComplaintList() {
       ws.mergeCells(`A3:${lastCol}3`);
       const filterParts: string[] = [];
       if (companyFilter !== "ALL") filterParts.push(`บริษัท: ${companies.find(c => c.id === companyFilter)?.name}`);
+      if (branchFilter !== "ALL") filterParts.push(`สาขา: ${branches.find(b => b.id === branchFilter)?.name}`);
       if (statusFilter !== "ALL") filterParts.push(`สถานะ: ${statusFilter}`);
       if (categoryFilter !== "ALL") filterParts.push(`หมวดหมู่: ${categories.find(c => c.id === categoryFilter)?.name}`);
       if (search.trim()) filterParts.push(`ค้นหา: "${search.trim()}"`);
@@ -502,7 +516,7 @@ export default function ComplaintList() {
         <div className="space-y-4">
           {/* Filters */}
           <div className="glass rounded-2xl p-4 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -517,6 +531,13 @@ export default function ComplaintList() {
                 <SelectContent>
                   <SelectItem value="ALL">ทุกบริษัท</SelectItem>
                   {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={branchFilter} onValueChange={setBranchFilter}>
+                <SelectTrigger><SelectValue placeholder="สาขา" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">ทุกสาขา</SelectItem>
+                  {branchOptions.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
