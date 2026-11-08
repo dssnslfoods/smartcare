@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { guessExpenseType } from "@/lib/expenseTypeGuess";
+import ExpenseTypePicker from "@/components/ExpenseTypePicker";
 
 interface LookupItem { id: string; name: string; }
 interface LookupData {
@@ -82,6 +83,8 @@ export default function ComplaintForm() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [actionItems, setActionItems] = useState<ActionItem[]>(INITIAL_ACTION_ITEMS);
   const [costItems, setCostItems] = useState<CostItem[]>(INITIAL_COST_ITEMS);
+  const [openTypeRow, setOpenTypeRow] = useState<number | null>(null);
+  const [costSubmitTried, setCostSubmitTried] = useState(false);
   const [lookup, setLookup] = useState<LookupData>({
     companies: [], branches: [], product_groups: [], categories: [],
     problem_types: [], problem_sub_types: [], callers: [], statuses: [], priorities: [], root_causes: [], expense_types: [],
@@ -302,7 +305,7 @@ export default function ComplaintForm() {
       root_cause_ids: defaultRcId ? [defaultRcId] : [],
     });
     setActionItems(INITIAL_ACTION_ITEMS);
-    setCostItems(INITIAL_COST_ITEMS);
+    setCostItems(INITIAL_COST_ITEMS); setOpenTypeRow(null); setCostSubmitTried(false);
   }
 
   async function handleEditRecent(id: string) {
@@ -338,6 +341,7 @@ export default function ComplaintForm() {
     } else {
       setCostItems(INITIAL_COST_ITEMS);
     }
+    setOpenTypeRow(null); setCostSubmitTried(false);
     setEditingId(id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -395,7 +399,7 @@ export default function ComplaintForm() {
       if (!c.item_name?.trim()) missing.push(`รายละเอียดค่าใช้จ่าย (รายการที่ ${no})`);
     });
 
-    if (missing.length > 0) { toast.error(`กรุณากรอกข้อมูลให้ครบ: ${missing.join(", ")}`); return; }
+    if (missing.length > 0) { setCostSubmitTried(true); toast.error(`กรุณากรอกข้อมูลให้ครบ: ${missing.join(", ")}`); return; }
     setSaving(true);
     try {
       // Derive resolved_at from the earliest action item due_date for SLA compatibility
@@ -764,69 +768,66 @@ export default function ComplaintForm() {
 
                     <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
                       <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                      <span>
-                        พิมพ์<span className="text-foreground font-medium">รายละเอียดค่าใช้จ่าย</span>ก่อน ระบบจะเลือก<span className="text-foreground font-medium">ประเภทค่าใช้จ่าย</span>ให้อัตโนมัติจากคีย์เวิร์ด (มีป้าย <span className="text-primary">✨ อัตโนมัติ</span>) — ตรวจสอบหรือเปลี่ยนเองได้ทุกครั้ง
-                      </span>
+                      <span>พิมพ์รายละเอียด ระบบจะเลือกประเภทให้ (<span className="text-primary">✨</span>) — กดที่ประเภทเพื่อเปลี่ยน</span>
                     </div>
 
-                    {costItems.map((item, idx) => (
-                      <div key={idx} className="flex flex-wrap sm:flex-nowrap items-end gap-3">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <Label className="text-xs text-muted-foreground">รายละเอียดค่าใช้จ่าย <span className="text-destructive">*</span></Label>
-                          <Input
-                            value={item.item_name}
-                            onChange={e => updateCostDetail(idx, e.target.value)}
-                            placeholder="พิมพ์รายละเอียด เช่น ส่ง Kerry, กระเช้าขอโทษลูกค้า..."
-                          />
+                    {costItems.map((item, idx) => {
+                      const rowFilled = !isCostItemBlank(item);
+                      const detailInvalid = costSubmitTried && rowFilled && !item.item_name.trim();
+                      return (
+                      <div key={idx} className="p-3 bg-secondary/20 border border-border/40 rounded-xl space-y-2.5">
+                        <div className="flex flex-wrap sm:flex-nowrap items-end gap-3">
+                          <div className="w-full sm:flex-1 min-w-0 space-y-1">
+                            <Label className="text-xs text-muted-foreground">รายละเอียดค่าใช้จ่าย <span className="text-destructive">*</span></Label>
+                            <Input
+                              value={item.item_name}
+                              onChange={e => updateCostDetail(idx, e.target.value)}
+                              onBlur={() => {
+                                if (item.item_name.trim() && !item.expense_type_id) setOpenTypeRow(idx);
+                              }}
+                              placeholder="พิมพ์รายละเอียด เช่น ส่ง Kerry, กระเช้าขอโทษลูกค้า..."
+                              className={cn(detailInvalid && "border-destructive")}
+                            />
+                          </div>
+                          <div className="flex-1 sm:flex-none sm:w-40 space-y-1">
+                            <Label className="text-xs text-muted-foreground">จำนวนเงิน (บาท)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.amount}
+                              onChange={e => updateCostItem(idx, "amount", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          {costItems.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() => { removeCostItem(idx); setOpenTypeRow(null); }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
-                        <div className="w-full sm:w-56 space-y-1">
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <span>ประเภทค่าใช้จ่าย <span className="text-destructive">*</span></span>
-                            {item.type_auto && item.expense_type_id && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] text-primary" title="เลือกให้อัตโนมัติจากคีย์เวิร์ดในรายละเอียด — เปลี่ยนเองได้">
-                                <Sparkles className="h-3 w-3" />อัตโนมัติ
-                              </span>
-                            )}
-                          </Label>
-                          <Select
-                            value={item.expense_type_id || ""}
-                            onValueChange={v => {
-                              const name = lookup.expense_types.find(t => t.id === v)?.name || "";
-                              setCostItems(prev => prev.map((c, i) => i === idx ? { ...c, expense_type_id: v, expense_type_name: name, type_auto: false } : c));
-                            }}
-                          >
-                            <SelectTrigger><SelectValue placeholder="เลือกอัตโนมัติ / เลือกเอง" /></SelectTrigger>
-                            <SelectContent>
-                              {lookup.expense_types.map(t => (
-                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="w-40 space-y-1">
-                          <Label className="text-xs text-muted-foreground">จำนวนเงิน (บาท)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.amount}
-                            onChange={e => updateCostItem(idx, "amount", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                        {costItems.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
-                            onClick={() => removeCostItem(idx)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <ExpenseTypePicker
+                          types={lookup.expense_types}
+                          value={item.expense_type_id || ""}
+                          isAuto={!!item.type_auto}
+                          invalid={costSubmitTried && rowFilled && !item.expense_type_id}
+                          noMatch={!!item.item_name.trim() && !item.expense_type_id}
+                          open={openTypeRow === idx}
+                          onOpenChange={o => setOpenTypeRow(o ? idx : null)}
+                          onSelect={v => {
+                            const name = lookup.expense_types.find(t => t.id === v)?.name || "";
+                            setCostItems(prev => prev.map((c, i) => i === idx ? { ...c, expense_type_id: v, expense_type_name: name, type_auto: false } : c));
+                          }}
+                        />
                       </div>
-                    ))}
+                      );
+                    })}
 
                     {totalCost > 0 && (
                       <div className="flex justify-end pt-2 border-t border-border/30">
