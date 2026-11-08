@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Database,
   Building2, GitBranch, Package, Tag, AlertTriangle, List, Users,
-  Download, Plus, RefreshCw, FileUp, Pencil, Trash2, Save, X, Flag, Zap, Search, Microscope
+  Download, Plus, RefreshCw, FileUp, Pencil, Trash2, Save, X, Flag, Zap, Search, Microscope, Wallet
 } from 'lucide-react';
 import TopNavBar from '@/components/TopNavBar';
 import { Button } from '@/components/ui/button';
@@ -498,6 +498,46 @@ const TAB_CONFIGS: TabConfig[] = [
     ],
     toImportRows: (rows) => rows.map((r, i) => ({
       name: r['name'] || r['ชื่อสาเหตุ'] || 'ไม่ระบุ',
+      code: r['code'] || r['รหัส'] || null,
+      sort_order: i + 1,
+    })),
+  },
+
+  // ── ประเภทค่าใช้จ่าย ───────────────────────────────────────────────────────────
+  {
+    id: 'expense_types',
+    label: 'ประเภทค่าใช้จ่าย',
+    icon: Wallet,
+    tableName: 'expense_types',
+    formFields: [
+      { key: 'name', label: 'ชื่อประเภทค่าใช้จ่าย', type: 'text', required: true, placeholder: 'เช่น ค่าตัวอย่าง' },
+      { key: 'code', label: 'รหัส', type: 'text', placeholder: 'เช่น sample' },
+      { key: 'sort_order', label: 'ลำดับ', type: 'number' },
+    ],
+    displayColumns: [
+      { key: 'name', label: 'ชื่อประเภทค่าใช้จ่าย' },
+      { key: 'code', label: 'รหัส' },
+      { key: 'sort_order', label: 'ลำดับ' },
+    ],
+    fetchSelect: 'id, name, code, sort_order',
+    orderBy: 'sort_order',
+    orderAsc: true,
+    upsertKey: 'name',
+    toInsert: (form) => ({ name: form.name, code: form.code || null, sort_order: parseInt(form.sort_order || '0') }),
+    toUpdate: (form) => ({ name: form.name, code: form.code || null, sort_order: parseInt(form.sort_order || '0') }),
+    toFormValues: (row) => ({ name: row.name || '', code: row.code || '', sort_order: (row.sort_order ?? 0).toString() }),
+    toDisplayRow: (row) => ({ name: row.name, code: row.code || '-', sort_order: (row.sort_order ?? 0).toString() }),
+    toExportRow: (row) => ({ 'ชื่อประเภทค่าใช้จ่าย': row.name, 'รหัส': row.code || '', 'ลำดับ': (row.sort_order ?? 0).toString() }),
+    importColumns: [
+      { key: 'name', label: 'ชื่อประเภทค่าใช้จ่าย', required: true },
+      { key: 'code', label: 'รหัส' },
+    ],
+    importSampleRows: [
+      { 'ชื่อประเภทค่าใช้จ่าย': 'ค่าตัวอย่าง', 'รหัส': 'sample' },
+      { 'ชื่อประเภทค่าใช้จ่าย': 'ค่ากระเช้า', 'รหัส': 'gift_basket' },
+    ],
+    toImportRows: (rows) => rows.map((r, i) => ({
+      name: r['name'] || r['ชื่อประเภทค่าใช้จ่าย'] || 'ไม่ระบุ',
       code: r['code'] || r['รหัส'] || null,
       sort_order: i + 1,
     })),

@@ -389,7 +389,7 @@ export default function ComplaintList() {
           const action = actionItems[ai] || null;
           const costItems: any[] = Array.isArray(c.cost_items) ? c.cost_items : [];
           const totalCost = costItems.reduce((s, ci) => s + (parseFloat(ci.amount) || 0), 0);
-          const costsText = costItems.map(ci => `${ci.item_name || ""}${ci.amount ? ` (${parseFloat(ci.amount).toLocaleString("th-TH")} บ.)` : ""}`).filter(Boolean).join("\n");
+          const costsText = costItems.map(ci => `${ci.expense_type_name ? `[${ci.expense_type_name}] ` : ""}${ci.item_name || ""}${ci.amount ? ` (${parseFloat(ci.amount).toLocaleString("th-TH")} บ.)` : ""}`).filter(Boolean).join("\n");
 
           const rowData: Record<string, any> = {
             no:          ai === 0 ? idx + 1 : "",

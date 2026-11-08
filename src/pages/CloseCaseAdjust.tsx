@@ -193,7 +193,10 @@ function ComplaintDetailDialog({ id, open, onClose }: { id: string | null; open:
                 <div className="rounded-lg overflow-hidden border border-border/30">
                   {costItems.map((c, i) => (
                     <div key={i} className="flex justify-between px-3 py-2 text-sm odd:bg-secondary/10">
-                      <span>{c.item_name || "-"}</span>
+                      <span>
+                        {c.expense_type_name && <span className="text-muted-foreground">[{c.expense_type_name}] </span>}
+                        {c.item_name || "-"}
+                      </span>
                       <span className="font-medium tabular-nums">
                         {parseFloat(c.amount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บ.
                       </span>

@@ -34,13 +34,15 @@ interface LookupData {
   statuses: (LookupItem & { code: string | null; is_default: boolean; sort_order: number })[];
   priorities: (LookupItem & { code: string; is_default: boolean; sort_order: number })[];
   root_causes: (LookupItem & { code: string | null; is_default: boolean; sort_order: number })[];
+  expense_types: LookupItem[];
 }
 
 interface ActionItem { measure: string; responsible: string; due_date: string; }
-interface CostItem { item_name: string; amount: string; }
+interface CostItem { expense_type_id?: string; expense_type_name?: string; item_name: string; amount: string; }
 
 const INITIAL_ACTION_ITEMS: ActionItem[] = [{ measure: "", responsible: "", due_date: "" }];
-const INITIAL_COST_ITEMS: CostItem[] = [{ item_name: "", amount: "" }];
+const INITIAL_COST_ITEMS: CostItem[] = [{ expense_type_id: "", expense_type_name: "", item_name: "", amount: "" }];
+const isCostItemBlank = (c: CostItem) => !c.expense_type_id && !c.item_name?.trim() && !c.amount;
 
 const INITIAL_FORM = {
   complaint_number: "", complaint_date: "", company_id: "", branch_id: "",
@@ -74,7 +76,7 @@ export default function ComplaintForm() {
   const [costItems, setCostItems] = useState<CostItem[]>(INITIAL_COST_ITEMS);
   const [lookup, setLookup] = useState<LookupData>({
     companies: [], branches: [], product_groups: [], categories: [],
-    problem_types: [], problem_sub_types: [], callers: [], statuses: [], priorities: [], root_causes: [],
+    problem_types: [], problem_sub_types: [], callers: [], statuses: [], priorities: [], root_causes: [], expense_types: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -88,7 +90,7 @@ export default function ComplaintForm() {
   useEffect(() => {
     async function fetchLookups() {
       try {
-        const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities, rootCauses] =
+        const [companies, branches, productGroups, categories, problemTypes, problemSubTypes, callers, statuses, priorities, rootCauses, expenseTypes] =
           await Promise.all([
             supabase.from("companies").select("id, name").order("name"),
             supabase.from("branches").select("id, name, company_id").order("name"),
@@ -100,6 +102,7 @@ export default function ComplaintForm() {
             supabase.from("statuses").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
             supabase.from("priorities").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
             supabase.from("root_causes").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
+            supabase.from("expense_types").select("id, name").order("sort_order", { ascending: true }).order("name"),
           ]);
         let companyList = companies.data || [];
         let branchList = (branches.data || []) as (LookupItem & { company_id: string })[];
@@ -124,6 +127,7 @@ export default function ComplaintForm() {
           statuses: (statuses.data || []) as any,
           priorities: (priorities.data || []) as any,
           root_causes: (rootCauses.data || []) as any,
+          expense_types: (expenseTypes.data || []) as any,
         });
 
         const defaultCallerId = callers.data?.find((c: any) => c.name === "Call ขาเข้า")?.id || "";
@@ -195,7 +199,7 @@ export default function ComplaintForm() {
   }
 
   // Cost item helpers
-  function addCostItem() { setCostItems(prev => [...prev, { item_name: "", amount: "" }]); }
+  function addCostItem() { setCostItems(prev => [...prev, { expense_type_id: "", expense_type_name: "", item_name: "", amount: "" }]); }
   function removeCostItem(idx: number) { setCostItems(prev => prev.filter((_, i) => i !== idx)); }
   function updateCostItem(idx: number, key: keyof CostItem, value: string) {
     setCostItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item));
@@ -362,6 +366,14 @@ export default function ComplaintForm() {
     const hasAction = actionItems.some(a => a.measure.trim());
     if (!hasAction) missing.push("มาตรการ (กรุณากรอกอย่างน้อย 1 รายการ)");
 
+    // Cost items: any non-blank row must have expense type + detail
+    const filledCosts = costItems.filter(c => !isCostItemBlank(c));
+    filledCosts.forEach(c => {
+      const no = costItems.indexOf(c) + 1;
+      if (!c.expense_type_id) missing.push(`ประเภทค่าใช้จ่าย (รายการที่ ${no})`);
+      if (!c.item_name?.trim()) missing.push(`รายละเอียดค่าใช้จ่าย (รายการที่ ${no})`);
+    });
+
     if (missing.length > 0) { toast.error(`กรุณากรอกข้อมูลให้ครบ: ${missing.join(", ")}`); return; }
     setSaving(true);
     try {
@@ -380,7 +392,7 @@ export default function ComplaintForm() {
         root_cause_id: form.root_cause_ids.length > 0 ? form.root_cause_ids[0] : null,
         root_cause_ids: form.root_cause_ids,
         action_items: actionItems,
-        cost_items: costItems,
+        cost_items: filledCosts.map(c => ({ ...c, item_name: c.item_name.trim() })),
         resolution: resolutionText,
         resolved_at: firstDueDate,
         closed_case_month: complaintDateObj.getMonth() + 1,
@@ -730,13 +742,30 @@ export default function ComplaintForm() {
                     </div>
 
                     {costItems.map((item, idx) => (
-                      <div key={idx} className="flex items-end gap-3">
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs text-muted-foreground">รายการ</Label>
+                      <div key={idx} className="flex flex-wrap sm:flex-nowrap items-end gap-3">
+                        <div className="w-full sm:w-56 space-y-1">
+                          <Label className="text-xs text-muted-foreground">ประเภทค่าใช้จ่าย <span className="text-destructive">*</span></Label>
+                          <Select
+                            value={item.expense_type_id || ""}
+                            onValueChange={v => {
+                              const name = lookup.expense_types.find(t => t.id === v)?.name || "";
+                              setCostItems(prev => prev.map((c, i) => i === idx ? { ...c, expense_type_id: v, expense_type_name: name } : c));
+                            }}
+                          >
+                            <SelectTrigger><SelectValue placeholder="เลือกประเภท..." /></SelectTrigger>
+                            <SelectContent>
+                              {lookup.expense_types.map(t => (
+                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Label className="text-xs text-muted-foreground">รายละเอียดค่าใช้จ่าย <span className="text-destructive">*</span></Label>
                           <Input
                             value={item.item_name}
                             onChange={e => updateCostItem(idx, "item_name", e.target.value)}
-                            placeholder="รายการค่าใช้จ่าย..."
+                            placeholder="ระบุรายละเอียดค่าใช้จ่าย..."
                           />
                         </div>
                         <div className="w-40 space-y-1">
