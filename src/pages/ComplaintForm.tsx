@@ -762,8 +762,23 @@ export default function ComplaintForm() {
                       </Button>
                     </div>
 
+                    <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                      <span>
+                        พิมพ์<span className="text-foreground font-medium">รายละเอียดค่าใช้จ่าย</span>ก่อน ระบบจะเลือก<span className="text-foreground font-medium">ประเภทค่าใช้จ่าย</span>ให้อัตโนมัติจากคีย์เวิร์ด (มีป้าย <span className="text-primary">✨ อัตโนมัติ</span>) — ตรวจสอบหรือเปลี่ยนเองได้ทุกครั้ง
+                      </span>
+                    </div>
+
                     {costItems.map((item, idx) => (
                       <div key={idx} className="flex flex-wrap sm:flex-nowrap items-end gap-3">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Label className="text-xs text-muted-foreground">รายละเอียดค่าใช้จ่าย <span className="text-destructive">*</span></Label>
+                          <Input
+                            value={item.item_name}
+                            onChange={e => updateCostDetail(idx, e.target.value)}
+                            placeholder="พิมพ์รายละเอียด เช่น ส่ง Kerry, กระเช้าขอโทษลูกค้า..."
+                          />
+                        </div>
                         <div className="w-full sm:w-56 space-y-1">
                           <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <span>ประเภทค่าใช้จ่าย <span className="text-destructive">*</span></span>
@@ -780,21 +795,13 @@ export default function ComplaintForm() {
                               setCostItems(prev => prev.map((c, i) => i === idx ? { ...c, expense_type_id: v, expense_type_name: name, type_auto: false } : c));
                             }}
                           >
-                            <SelectTrigger><SelectValue placeholder="เลือกประเภท..." /></SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="เลือกอัตโนมัติ / เลือกเอง" /></SelectTrigger>
                             <SelectContent>
                               {lookup.expense_types.map(t => (
                                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <Label className="text-xs text-muted-foreground">รายละเอียดค่าใช้จ่าย <span className="text-destructive">*</span></Label>
-                          <Input
-                            value={item.item_name}
-                            onChange={e => updateCostDetail(idx, e.target.value)}
-                            placeholder="ระบุรายละเอียดค่าใช้จ่าย..."
-                          />
                         </div>
                         <div className="w-40 space-y-1">
                           <Label className="text-xs text-muted-foreground">จำนวนเงิน (บาท)</Label>
