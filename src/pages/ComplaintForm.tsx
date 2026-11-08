@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X, Building2, Tag, UserCircle2, FileText, Receipt } from "lucide-react";
+import { Save, Plus, Loader2, CheckCircle2, CalendarIcon, Mic, MicOff, Pencil, Trash2, X, Building2, Tag, UserCircle2, FileText, Receipt, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import TopNavBar from "@/components/TopNavBar";
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { guessExpenseType } from "@/lib/expenseTypeGuess";
 
 interface LookupItem { id: string; name: string; }
 interface LookupData {
@@ -34,11 +35,18 @@ interface LookupData {
   statuses: (LookupItem & { code: string | null; is_default: boolean; sort_order: number })[];
   priorities: (LookupItem & { code: string; is_default: boolean; sort_order: number })[];
   root_causes: (LookupItem & { code: string | null; is_default: boolean; sort_order: number })[];
-  expense_types: LookupItem[];
+  expense_types: (LookupItem & { keywords: string | null })[];
 }
 
 interface ActionItem { measure: string; responsible: string; due_date: string; }
-interface CostItem { expense_type_id?: string; expense_type_name?: string; item_name: string; amount: string; }
+interface CostItem {
+  expense_type_id?: string;
+  expense_type_name?: string;
+  item_name: string;
+  amount: string;
+  /** client-only: type was guessed from keywords (not saved) */
+  type_auto?: boolean;
+}
 
 const INITIAL_ACTION_ITEMS: ActionItem[] = [{ measure: "", responsible: "", due_date: "" }];
 const INITIAL_COST_ITEMS: CostItem[] = [{ expense_type_id: "", expense_type_name: "", item_name: "", amount: "" }];
@@ -102,7 +110,7 @@ export default function ComplaintForm() {
             supabase.from("statuses").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
             supabase.from("priorities").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
             supabase.from("root_causes").select("id, name, code, is_default, sort_order").order("sort_order", { ascending: true }).order("name"),
-            supabase.from("expense_types").select("id, name").order("sort_order", { ascending: true }).order("name"),
+            supabase.from("expense_types").select("id, name, keywords").order("sort_order", { ascending: true }).order("name"),
           ]);
         let companyList = companies.data || [];
         let branchList = (branches.data || []) as (LookupItem & { company_id: string })[];
@@ -201,8 +209,21 @@ export default function ComplaintForm() {
   // Cost item helpers
   function addCostItem() { setCostItems(prev => [...prev, { expense_type_id: "", expense_type_name: "", item_name: "", amount: "" }]); }
   function removeCostItem(idx: number) { setCostItems(prev => prev.filter((_, i) => i !== idx)); }
-  function updateCostItem(idx: number, key: keyof CostItem, value: string) {
+  function updateCostItem(idx: number, key: "item_name" | "amount", value: string) {
     setCostItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: value } : item));
+  }
+  // Typing the detail auto-picks the expense type by keyword, unless the user chose a type manually
+  function updateCostDetail(idx: number, value: string) {
+    setCostItems(prev => prev.map((item, i) => {
+      if (i !== idx) return item;
+      const next = { ...item, item_name: value };
+      const canAuto = !item.expense_type_id || item.type_auto;
+      if (!canAuto) return next;
+      const guess = guessExpenseType(value, lookup.expense_types);
+      if (guess) return { ...next, expense_type_id: guess.id, expense_type_name: guess.name, type_auto: true };
+      if (item.type_auto) return { ...next, expense_type_id: "", expense_type_name: "", type_auto: false };
+      return next;
+    }));
   }
 
   function toggleMic(field: "description") {
@@ -392,7 +413,7 @@ export default function ComplaintForm() {
         root_cause_id: form.root_cause_ids.length > 0 ? form.root_cause_ids[0] : null,
         root_cause_ids: form.root_cause_ids,
         action_items: actionItems,
-        cost_items: filledCosts.map(c => ({ ...c, item_name: c.item_name.trim() })),
+        cost_items: filledCosts.map(({ type_auto: _auto, ...c }) => ({ ...c, item_name: c.item_name.trim() })),
         resolution: resolutionText,
         resolved_at: firstDueDate,
         closed_case_month: complaintDateObj.getMonth() + 1,
@@ -744,12 +765,19 @@ export default function ComplaintForm() {
                     {costItems.map((item, idx) => (
                       <div key={idx} className="flex flex-wrap sm:flex-nowrap items-end gap-3">
                         <div className="w-full sm:w-56 space-y-1">
-                          <Label className="text-xs text-muted-foreground">ประเภทค่าใช้จ่าย <span className="text-destructive">*</span></Label>
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span>ประเภทค่าใช้จ่าย <span className="text-destructive">*</span></span>
+                            {item.type_auto && item.expense_type_id && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] text-primary" title="เลือกให้อัตโนมัติจากคีย์เวิร์ดในรายละเอียด — เปลี่ยนเองได้">
+                                <Sparkles className="h-3 w-3" />อัตโนมัติ
+                              </span>
+                            )}
+                          </Label>
                           <Select
                             value={item.expense_type_id || ""}
                             onValueChange={v => {
                               const name = lookup.expense_types.find(t => t.id === v)?.name || "";
-                              setCostItems(prev => prev.map((c, i) => i === idx ? { ...c, expense_type_id: v, expense_type_name: name } : c));
+                              setCostItems(prev => prev.map((c, i) => i === idx ? { ...c, expense_type_id: v, expense_type_name: name, type_auto: false } : c));
                             }}
                           >
                             <SelectTrigger><SelectValue placeholder="เลือกประเภท..." /></SelectTrigger>
@@ -764,7 +792,7 @@ export default function ComplaintForm() {
                           <Label className="text-xs text-muted-foreground">รายละเอียดค่าใช้จ่าย <span className="text-destructive">*</span></Label>
                           <Input
                             value={item.item_name}
-                            onChange={e => updateCostItem(idx, "item_name", e.target.value)}
+                            onChange={e => updateCostDetail(idx, e.target.value)}
                             placeholder="ระบุรายละเอียดค่าใช้จ่าย..."
                           />
                         </div>
