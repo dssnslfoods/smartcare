@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch, Repeat, Sparkles } from "lucide-react";
+import { Loader2, LayoutDashboard, TrendingUp, AlertTriangle, Factory, Timer, Microscope, MapPin, RefreshCw, Tv, GitBranch, Repeat, Sparkles, Wallet } from "lucide-react";
 import { useComplaintsData, useFilterOptions } from "@/hooks/useComplaintsData";
 import TopNavBar from "@/components/TopNavBar";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -13,6 +13,7 @@ import PerformanceTab from "@/components/dashboard/PerformanceTab";
 import DeepAnalysisTab from "@/components/dashboard/DeepAnalysisTab";
 import MapTab from "@/components/dashboard/MapTab";
 import RootCauseAnalysisTab from "@/components/dashboard/RootCauseAnalysisTab";
+import ExpenseTab from "@/components/dashboard/ExpenseTab";
 import TVMode from "@/components/dashboard/TVMode";
 import { useAuth } from "@/contexts/AuthContext";
 import Footer from "@/components/Footer";
@@ -27,6 +28,7 @@ const TABS = [
   { id: "rootcause", label: "วิเคราะห์สาเหตุ", icon: GitBranch },
   { id: "deep", label: "เชิงลึก", icon: Microscope },
   { id: "map", label: "วิเคราะห์ CDC เชิงพื้นที่", icon: MapPin },
+  { id: "expense", label: "วิเคราะห์ค่าใช้จ่าย", icon: Wallet },
 ];
 
 export default function Index() {
@@ -202,6 +204,7 @@ export default function Index() {
               />
             )}
             {activeTab === "deep" && <DeepAnalysisTab data={data} />}
+            {activeTab === "expense" && <ExpenseTab data={data} />}
             {activeTab === "map" && (
               <MapTab
                 companyId={companyId}

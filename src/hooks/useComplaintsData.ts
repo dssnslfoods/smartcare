@@ -17,6 +17,9 @@ interface ComplaintRow {
   problem_types: { id: string; name: string } | null;
   problem_sub_types: { id: string; name: string } | null;
   callers: { id: string; name: string } | null;
+  description?: string | null;
+  priority?: string | null;
+  cost_items?: unknown;
 }
 
 interface FilterOptions {
@@ -298,6 +301,7 @@ export function useComplaintsData(
         .from("complaints")
         .select(`
           id, complaint_number, complaint_date, status, resolution, resolved_at, created_at,
+          description, priority, cost_items,
           companies:company_id(id, name),
           branches:branch_id(id, name),
           product_groups:product_group_id(id, name, code),
