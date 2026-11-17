@@ -28,7 +28,7 @@ const TABS = [
   { id: "rootcause", label: "วิเคราะห์สาเหตุ", icon: GitBranch },
   { id: "deep", label: "เชิงลึก", icon: Microscope },
   { id: "map", label: "วิเคราะห์ CDC เชิงพื้นที่", icon: MapPin },
-  { id: "expense", label: "วิเคราะห์ค่าใช้จ่าย", icon: Wallet },
+  { id: "expense", label: "วิเคราะห์ค่าใช้จ่าย", icon: Wallet, isNew: true },
 ];
 
 export default function Index() {
@@ -166,6 +166,12 @@ export default function Index() {
               >
                 <Icon className="w-3.5 h-3.5" />
                 {tab.label}
+                {"isNew" in tab && tab.isNew && (
+                  <span className="relative ml-0.5 inline-flex items-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-1.5 py-px text-[9px] font-bold leading-tight tracking-wide text-slate-900 shadow-[0_0_8px_rgba(251,146,60,0.6)]">
+                    <span className="absolute inset-0 rounded-full bg-orange-400/60 animate-ping [animation-duration:2s]" aria-hidden />
+                    <span className="relative">NEW</span>
+                  </span>
+                )}
               </button>
             );
           })}
