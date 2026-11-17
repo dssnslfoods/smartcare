@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, LabelList,
+  PieChart, Pie, Cell, BarChart, Bar, LabelList, ComposedChart, ReferenceLine,
 } from "recharts";
 import {
   Wallet, FileText, Calculator, TrendingUp, PieChart as PieIcon, BarChart3,
-  Trophy, Table2, Search, ArrowLeft, ArrowUpDown, ArrowUp, ArrowDown, Loader2,
+  Trophy, Table2, Search, ArrowUpDown, Users, Package, Layers, Building2, ArrowUp, ArrowDown, Loader2,
 } from "lucide-react";
 import type { CompanyData } from "@/data/mockData";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  buildExpenseSummary, UNSPECIFIED_TYPE,
-  type ExpenseCase, type ExpenseTypeRef,
+  buildExpenseSummary, groupExpenseCases, UNSPECIFIED_TYPE,
+  type ExpenseCase, type ExpenseGroup, type ExpenseTypeRef,
 } from "@/lib/expenseAnalytics";
 
 interface Props { data: CompanyData }
@@ -48,6 +49,7 @@ export default function ExpenseTab({ data }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "total", dir: "desc" });
+  const [paretoLevel, setParetoLevel] = useState<"type" | "sub">("type");
 
   useEffect(() => {
     supabase.from("expense_types").select("id, name, sort_order").order("sort_order", { ascending: true })
@@ -62,13 +64,21 @@ export default function ExpenseTab({ data }: Props) {
     [data.raw_complaints, types],
   );
 
+  const byCaller = useMemo(() => groupExpenseCases(summary.cases, c => c.raw?.callers?.name), [summary]);
+  const byGroup = useMemo(() => groupExpenseCases(summary.cases, c => c.raw?.product_groups?.name), [summary]);
+  const byOrg = useMemo(() => groupExpenseCases(summary.cases, c => `${c.company} / ${c.branch}`), [summary]);
+  const pareto = useMemo(
+    () => groupExpenseCases(summary.cases, c => paretoLevel === "type" ? c.raw?.problem_types?.name : c.raw?.problem_sub_types?.name),
+    [summary, paretoLevel],
+  );
+
   const top10Ids = useMemo(() => new Set(summary.cases.slice(0, 10).map(c => c.id)), [summary]);
   const selected = selectedId ? summary.cases.find(c => c.id === selectedId) || null : null;
 
-  // Leave detail view if the case drops out after a filter change
+  // Close the popup if the case drops out after a filter change
   useEffect(() => { if (selectedId && !selected) setSelectedId(null); }, [selectedId, selected]);
 
-  const openCase = (id: string) => { setSelectedId(id); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const openCase = (id: string) => setSelectedId(id);
 
   if (!types) {
     return (
@@ -78,8 +88,6 @@ export default function ExpenseTab({ data }: Props) {
       </div>
     );
   }
-
-  if (selected) return <CaseDetail c={selected} onBack={() => setSelectedId(null)} />;
 
   const monthlyData = summary.monthly.map(m => ({
     name: `${TH_MONTHS[m.month]} ${String((m.year + 543) % 100).padStart(2, "0")}`,
@@ -118,6 +126,13 @@ export default function ExpenseTab({ data }: Props) {
 
   return (
     <div className="space-y-5 animate-fade-in">
+      {/* 7. Complaint detail popup */}
+      <Dialog open={!!selected} onOpenChange={open => { if (!open) setSelectedId(null); }}>
+        <DialogContent className="max-w-4xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl border-border/60 bg-[hsl(220_20%_9%)]">
+          {selected && <CaseDetail c={selected} />}
+        </DialogContent>
+      </Dialog>
+
       {/* 1. KPI */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Kpi icon={Wallet} color="sky" label="ค่าใช้จ่ายรวม" value={baht(summary.total)} unit="บาท" />
@@ -217,6 +232,45 @@ export default function ExpenseTab({ data }: Props) {
         )}
       </div>
 
+      {/* 4.1 Payer / product group */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <RankCard
+          icon={Users} tint="rgba(236,72,153,0.15)" iconCls="text-pink-400" color="#ec4899"
+          title="Expense by Caller — ค่าใช้จ่ายตามผู้แจ้ง/ลูกค้า"
+          subtitle="ผู้แจ้งรายใดทำให้เกิดค่าใช้จ่ายมากที่สุด (บาท)"
+          groups={byCaller}
+        />
+        <RankCard
+          icon={Package} tint="rgba(20,184,166,0.15)" iconCls="text-teal-400" color="#14b8a6"
+          title="Expense by Product Group — ตามกลุ่มสินค้า"
+          subtitle="กลุ่มสินค้าที่ก่อให้เกิดค่าใช้จ่ายสูง (บาท)"
+          groups={byGroup}
+        />
+      </div>
+
+      {/* 4.2 Pareto by problem type */}
+      <div className="chart-card">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+          <div className="chart-title !mb-0">
+            <span className="chart-icon" style={{ background: "rgba(249,115,22,0.15)" }}><Layers className="w-3.5 h-3.5 text-orange-400" /></span>
+            Pareto — ค่าใช้จ่ายตามประเภทปัญหา
+          </div>
+          <div className="flex rounded-lg border border-border/50 p-0.5 text-xs">
+            {([["type", "ประเภทปัญหา"], ["sub", "ปัญหาย่อย"]] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setParetoLevel(k)}
+                className={`px-3 py-1 rounded-md transition-colors ${paretoLevel === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ParetoNote groups={pareto} />
+        <ParetoChart groups={pareto} />
+      </div>
+
+      {/* 4.3 Company / branch */}
+      <OrgTable groups={byOrg} />
+
       {/* 5. Top 10 */}
       <div className="chart-card">
         <div className="chart-title">
@@ -313,6 +367,143 @@ export default function ExpenseTab({ data }: Props) {
   );
 }
 
+const MAX_RANK = 8;
+
+/** Top N groups, the rest folded into "อื่นๆ" so the chart still sums to the total. */
+function foldTail(groups: ExpenseGroup[], max = MAX_RANK): ExpenseGroup[] {
+  if (groups.length <= max) return groups;
+  const head = groups.slice(0, max - 1);
+  const tail = groups.slice(max - 1);
+  const value = tail.reduce((s, g) => s + g.value, 0);
+  const count = tail.reduce((s, g) => s + g.count, 0);
+  return [...head, { name: `อื่นๆ (${tail.length})`, count, value, avg: value / count, pct: tail.reduce((s, g) => s + g.pct, 0), cumPct: 100 }];
+}
+
+function RankCard({ icon: Icon, tint, iconCls, color, title, subtitle, groups }: {
+  icon: any; tint: string; iconCls: string; color: string; title: string; subtitle: string; groups: ExpenseGroup[];
+}) {
+  const rows = foldTail(groups).map(g => ({ ...g, label: `${bahtShort(g.value)} · ${g.pct.toFixed(1)}% · ${g.count} Case` }));
+  return (
+    <div className="chart-card">
+      <div className="chart-title">
+        <span className="chart-icon" style={{ background: tint }}><Icon className={`w-3.5 h-3.5 ${iconCls}`} /></span>
+        {title}
+      </div>
+      <p className="text-xs text-muted-foreground -mt-3 mb-3">{subtitle}</p>
+      <ResponsiveContainer width="100%" height={Math.max(160, rows.length * 38)}>
+        <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 150, left: 0, bottom: 0 }}>
+          <XAxis type="number" hide />
+          <YAxis type="category" dataKey="name" width={130} interval={0} tick={{ fill: "#cbd5e1", fontSize: 12 }} />
+          <Tooltip
+            contentStyle={tooltipStyle} cursor={{ fill: "rgba(148,163,184,0.08)" }}
+            formatter={(v: number, _n, p: any) => [`${baht(v)} บาท (${p.payload.pct.toFixed(1)}%) · ${p.payload.count} Case · เฉลี่ย ${baht(p.payload.avg)}`, "ค่าใช้จ่าย"]}
+          />
+          <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} minPointSize={2}>
+            <LabelList dataKey="label" content={NoWrapRightLabel} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Recharts wraps label text to the bar's width, which breaks on short bars; draw it on one line. */
+function NoWrapRightLabel({ x, y, width, height, value }: any) {
+  return (
+    <text x={x + width + 6} y={y + height / 2} dominantBaseline="central" fill="#cbd5e1" fontSize={11}>
+      {value}
+    </text>
+  );
+}
+
+function ParetoNote({ groups }: { groups: ExpenseGroup[] }) {
+  if (!groups.length) return null;
+  const n80 = groups.findIndex(g => g.cumPct >= 80) + 1;
+  return (
+    <p className="text-xs text-muted-foreground mb-3">
+      แท่ง = ค่าใช้จ่าย (บาท) · เส้น = สัดส่วนสะสม (%) ·{" "}
+      <span className="text-orange-300 font-medium">
+        {n80} จาก {groups.length} ประเภท คิดเป็น {groups[n80 - 1].cumPct.toFixed(1)}% ของค่าใช้จ่ายทั้งหมด
+      </span>
+    </p>
+  );
+}
+
+function ParetoChart({ groups }: { groups: ExpenseGroup[] }) {
+  const rows = groups.map(g => ({ ...g, short: g.name.length > 22 ? `${g.name.slice(0, 21)}…` : g.name }));
+  return (
+    <ResponsiveContainer width="100%" height={360}>
+      <ComposedChart data={rows} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
+        <XAxis dataKey="short" interval={0} angle={-35} textAnchor="end" height={110} tick={{ fill: "#cbd5e1", fontSize: 11 }} />
+        <YAxis yAxisId="v" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={bahtShort} width={50} />
+        <YAxis yAxisId="p" orientation="right" domain={[0, 100]} tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={v => `${v}%`} width={40} />
+        <Tooltip
+          contentStyle={tooltipStyle} cursor={{ fill: "rgba(148,163,184,0.08)" }}
+          labelFormatter={(_l, p: any) => p?.[0]?.payload?.name}
+          formatter={(v: number, n: string, p: any) => n === "cumPct"
+            ? [`${v.toFixed(1)}%`, "สัดส่วนสะสม"]
+            : [`${baht(v)} บาท (${p.payload.pct.toFixed(1)}%) · ${p.payload.count} Case`, "ค่าใช้จ่าย"]}
+        />
+        <ReferenceLine yAxisId="p" y={80} stroke="#f97316" strokeDasharray="4 4" label={{ value: "80%", fill: "#fdba74", fontSize: 11, position: "insideTopRight" }} />
+        <Bar yAxisId="v" dataKey="value" fill={BAR_COLOR} radius={[4, 4, 0, 0]} />
+        <Line yAxisId="p" dataKey="cumPct" stroke="#f97316" strokeWidth={2} dot={{ r: 3, fill: "#f97316" }} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
+
+function OrgTable({ groups }: { groups: ExpenseGroup[] }) {
+  const maxValue = Math.max(...groups.map(g => g.value), 1);
+  const maxAvg = Math.max(...groups.map(g => g.avg), 1);
+  return (
+    <div className="chart-card">
+      <div className="chart-title">
+        <span className="chart-icon" style={{ background: "rgba(99,102,241,0.15)" }}><Building2 className="w-3.5 h-3.5 text-indigo-400" /></span>
+        Expense by Company / Branch — จำนวนเคส เทียบ มูลค่า
+      </div>
+      <p className="text-xs text-muted-foreground -mt-3 mb-3">ใช้แยกสาขาที่ “เคสน้อยแต่มูลค่าสูง” ออกจากสาขาที่ “เคสมากแต่มูลค่าต่ำ”</p>
+      <div className="overflow-x-auto rounded-xl border border-border/40">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead className="bg-slate-800/95 text-xs text-slate-300">
+            <tr>
+              <th className="px-3 py-2.5 text-left">บริษัท / สาขา</th>
+              <th className="px-3 py-2.5 text-center">จำนวน Case</th>
+              <th className="px-3 py-2.5 text-left w-[30%]">ยอดรวม (บาท)</th>
+              <th className="px-3 py-2.5 text-left w-[30%]">เฉลี่ยต่อ Case (บาท)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map(g => (
+              <tr key={g.name} className="border-t border-border/30">
+                <td className="px-3 py-2">{g.name}</td>
+                <td className="px-3 py-2 text-center tabular-nums">{g.count}</td>
+                <td className="px-3 py-2">
+                  <InlineBar value={g.value} max={maxValue} color="#3b82f6" text={`${baht(g.value)} (${g.pct.toFixed(1)}%)`} />
+                </td>
+                <td className="px-3 py-2">
+                  <InlineBar value={g.avg} max={maxAvg} color="#f59e0b" text={baht(g.avg)} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function InlineBar({ value, max, color, text }: { value: number; max: number; color: string; text: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${Math.max(1, (value / max) * 100)}%`, background: color }} />
+      </div>
+      <span className="tabular-nums text-xs whitespace-nowrap w-40 text-right">{text}</span>
+    </div>
+  );
+}
+
 const KPI_STYLES = {
   sky: { border: "kpi-card-gradient-cyan", bg: "rgba(14,165,233,0.15)", text: "text-sky-400" },
   green: { border: "kpi-card-gradient-green", bg: "rgba(34,197,94,0.15)", text: "text-green-400" },
@@ -349,7 +540,7 @@ function Th({ label, k, sort, onSort, align = "left" }: {
   );
 }
 
-function CaseDetail({ c, onBack }: { c: ExpenseCase; onBack: () => void }) {
+function CaseDetail({ c }: { c: ExpenseCase }) {
   const r = c.raw || {};
   const field = (label: string, value?: string | null) => (
     <div>
@@ -358,19 +549,11 @@ function CaseDetail({ c, onBack }: { c: ExpenseCase; onBack: () => void }) {
     </div>
   );
   return (
-    <div className="space-y-5 animate-fade-in">
-      <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/50 text-sm hover:bg-white/5 hover:border-primary/50">
-          <ArrowLeft className="w-4 h-4" /> กลับ Expense Analysis
-        </button>
-        <span className="text-sm text-muted-foreground">Expense by Complaint › <span className="text-foreground font-semibold">{c.number}</span></span>
-      </div>
-
-      <div className="chart-card flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground break-all">{c.number}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{fmtDate(c.date)} · {c.company} / {c.branch}</p>
+    <div className="space-y-4 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 pr-8">
+        <div className="min-w-0">
+          <DialogTitle className="text-2xl md:text-3xl font-bold text-foreground break-all">{c.number}</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-1">{fmtDate(c.date)} · {c.company} / {c.branch}</DialogDescription>
           <div className="flex gap-2 mt-3 flex-wrap">
             <span className="status-badge bg-primary/10 text-primary border border-primary/20">ความสำคัญ: {r.priority || "-"}</span>
             <span className="status-badge bg-primary/10 text-primary border border-primary/20">สถานะ: {r.status || "-"}</span>
@@ -383,7 +566,7 @@ function CaseDetail({ c, onBack }: { c: ExpenseCase; onBack: () => void }) {
         </div>
       </div>
 
-      <div className="chart-card">
+      <div className="chart-card !p-5">
         <div className="chart-title">ข้อมูล Complaint</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
           {field("กลุ่มสินค้า", r.product_groups?.name)}
@@ -396,7 +579,7 @@ function CaseDetail({ c, onBack }: { c: ExpenseCase; onBack: () => void }) {
         </div>
       </div>
 
-      <div className="chart-card">
+      <div className="chart-card !p-5">
         <div className="chart-title !mb-1">รายการค่าใช้จ่าย</div>
         <p className="text-xs text-muted-foreground mb-3">{c.lines.length} รายการค่าใช้จ่าย</p>
         <div className="overflow-x-auto rounded-xl border border-border/40">

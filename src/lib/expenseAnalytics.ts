@@ -129,3 +129,41 @@ export function buildExpenseSummary(complaints: any[], types: ExpenseTypeRef[]):
 
   return { total, caseCount, avgPerCase, cases, monthly, byProblem, byType };
 }
+
+export interface ExpenseGroup {
+  name: string;
+  count: number;      // cases with expense
+  value: number;      // total expense
+  avg: number;        // value / count
+  pct: number;        // share of grand total (%)
+  cumPct: number;     // cumulative share after sorting desc (for Pareto)
+}
+
+export const UNSPECIFIED = "ไม่ระบุ";
+
+/** Group expense cases by a label; each case counts once, so values sum to the total. */
+export function groupExpenseCases(cases: ExpenseCase[], keyOf: (c: ExpenseCase) => string | null | undefined): ExpenseGroup[] {
+  const total = cases.reduce((s, c) => s + c.total, 0);
+  const map = new Map<string, { count: number; value: number }>();
+  cases.forEach(c => {
+    const k = (keyOf(c) || "").trim() || UNSPECIFIED;
+    const g = map.get(k) || { count: 0, value: 0 };
+    g.count++;
+    g.value += c.total;
+    map.set(k, g);
+  });
+  let cum = 0;
+  return [...map.entries()]
+    .sort((a, b) => b[1].value - a[1].value)
+    .map(([name, g]) => {
+      cum += g.value;
+      return {
+        name,
+        count: g.count,
+        value: round2(g.value),
+        avg: round2(g.value / g.count),
+        pct: total ? (g.value / total) * 100 : 0,
+        cumPct: total ? (cum / total) * 100 : 0,
+      };
+    });
+}

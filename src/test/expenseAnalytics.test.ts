@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildExpenseSummary, parseAmount, UNSPECIFIED_TYPE } from "@/lib/expenseAnalytics";
+import { buildExpenseSummary, groupExpenseCases, parseAmount, UNSPECIFIED, UNSPECIFIED_TYPE } from "@/lib/expenseAnalytics";
 
 const types = [
   { id: "fq", name: "ค่าปรับสินค้าไม่ได้คุณภาพ (Food Quality)", sort_order: 1 },
@@ -62,5 +62,23 @@ describe("expense analytics", () => {
     expect(parseAmount("1,234.50")).toBe(1234.5);
     expect(parseAmount("")).toBe(0);
     expect(parseAmount(undefined)).toBe(0);
+  });
+});
+
+describe("groupExpenseCases", () => {
+  const s = buildExpenseSummary(complaints, types);
+  const groups = groupExpenseCases(s.cases, c => c.raw.categories?.name);
+
+  it("sorts by value, computes avg/share and reaches 100% cumulative", () => {
+    expect(groups.map(g => g.name)).toEqual(["Recall", "Service"]);
+    expect(groups[0]).toMatchObject({ count: 1, value: 311059.66, avg: 311059.66 });
+    expect(groups.at(-1)!.cumPct).toBeCloseTo(100);
+    expect(groups.reduce((t, g) => t + g.pct, 0)).toBeCloseTo(100);
+  });
+
+  it("labels missing keys as unspecified", () => {
+    const g = groupExpenseCases(s.cases, c => c.raw.callers?.name);
+    expect(g).toHaveLength(1);
+    expect(g[0]).toMatchObject({ name: UNSPECIFIED, count: 2 });
   });
 });
