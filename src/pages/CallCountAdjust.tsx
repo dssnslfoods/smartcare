@@ -26,11 +26,15 @@ interface Row {
   call_count: number;
   call_count_reviewed_at: string | null;
   companies: { name: string } | null;
+  branches: { name: string } | null;
   product_groups: { name: string } | null;
   problem_types: { name: string } | null;
 }
 
 type ReviewFilter = "UNREVIEWED" | "REVIEWED" | "ALL";
+
+/** Branch filter value for complaints that have no branch recorded. */
+const NO_BRANCH = "NONE";
 
 function DatePickerInput({ value, onChange, placeholder }: { value: Date | undefined; onChange: (d: Date | undefined) => void; placeholder: string }) {
   const [open, setOpen] = useState(false);
@@ -51,15 +55,19 @@ function DatePickerInput({ value, onChange, placeholder }: { value: Date | undef
 }
 
 export default function CallCountAdjust() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<{ total: number; reviewed: number } | null>(null);
 
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [filterCompany, setFilterCompany] = useState("ALL");
+  const [filterBranch, setFilterBranch] = useState("ALL");
+  // Wait until the user's own company/branch is applied as the default before the first fetch
+  const [defaultsReady, setDefaultsReady] = useState(false);
   const [filterReview, setFilterReview] = useState<ReviewFilter>("UNREVIEWED");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
@@ -73,15 +81,41 @@ export default function CallCountAdjust() {
     supabase.from("companies").select("id, name").order("name").then(({ data }) => setCompanies(data || []));
   }, []);
 
+  // Default the filters to the signed-in user's own company/branch (they can still switch).
+  useEffect(() => {
+    if (defaultsReady || userProfile === undefined) return;
+    if (userProfile?.company_id) setFilterCompany(userProfile.company_id);
+    if (userProfile?.company_id && userProfile?.branch_id) setFilterBranch(userProfile.branch_id);
+    setDefaultsReady(true);
+  }, [userProfile, defaultsReady]);
+
+  useEffect(() => {
+    if (filterCompany === "ALL") { setBranches([]); return; }
+    supabase.from("branches").select("id, name").eq("company_id", filterCompany).order("name")
+      .then(({ data }) => setBranches(data || []));
+  }, [filterCompany]);
+
+  function changeCompany(value: string) {
+    setFilterCompany(value);
+    setFilterBranch("ALL");
+  }
+
   const fetchProgress = useCallback(async () => {
-    const [{ count: total }, { count: reviewed }] = await Promise.all([
-      supabase.from("complaints").select("id", { count: "exact", head: true }),
-      supabase.from("complaints").select("id", { count: "exact", head: true }).not("call_count_reviewed_at", "is", null),
-    ]);
+    if (!defaultsReady) return;
+    const countScoped = (reviewedOnly: boolean) => {
+      let q = supabase.from("complaints").select("id", { count: "exact", head: true });
+      if (filterCompany !== "ALL") q = q.eq("company_id", filterCompany);
+      if (filterBranch === NO_BRANCH) q = q.is("branch_id", null);
+      else if (filterBranch !== "ALL") q = q.eq("branch_id", filterBranch);
+      if (reviewedOnly) q = q.not("call_count_reviewed_at", "is", null);
+      return q;
+    };
+    const [{ count: total }, { count: reviewed }] = await Promise.all([countScoped(false), countScoped(true)]);
     setProgress({ total: total ?? 0, reviewed: reviewed ?? 0 });
-  }, []);
+  }, [filterCompany, filterBranch, defaultsReady]);
 
   const fetchData = useCallback(async () => {
+    if (!defaultsReady) return;
     setLoading(true);
     const PAGE = 1000;
     let all: Row[] = [];
@@ -89,10 +123,12 @@ export default function CallCountAdjust() {
       let query = supabase
         .from("complaints")
         .select(`id, complaint_number, complaint_date, description, call_count, call_count_reviewed_at,
-          companies:company_id(name), product_groups:product_group_id(name), problem_types:problem_type_id(name)`)
+          companies:company_id(name), branches:branch_id(name), product_groups:product_group_id(name), problem_types:problem_type_id(name)`)
         .order("complaint_date", { ascending: false })
         .range(pageNum * PAGE, (pageNum + 1) * PAGE - 1);
       if (filterCompany !== "ALL") query = query.eq("company_id", filterCompany);
+      if (filterBranch === NO_BRANCH) query = query.is("branch_id", null);
+      else if (filterBranch !== "ALL") query = query.eq("branch_id", filterBranch);
       if (filterReview === "UNREVIEWED") query = query.is("call_count_reviewed_at", null);
       if (filterReview === "REVIEWED") query = query.not("call_count_reviewed_at", "is", null);
       if (dateFrom) query = query.gte("complaint_date", format(dateFrom, "yyyy-MM-dd"));
@@ -107,7 +143,7 @@ export default function CallCountAdjust() {
     setRows(all);
     setEdits(Object.fromEntries(all.map(r => [r.id, String(r.call_count ?? 1)])));
     setLoading(false);
-  }, [filterCompany, filterReview, dateFrom, dateTo, search]);
+  }, [filterCompany, filterBranch, defaultsReady, filterReview, dateFrom, dateTo, search]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchProgress(); }, [fetchProgress]);
@@ -142,7 +178,10 @@ export default function CallCountAdjust() {
     }
   }
 
-  const hasFilter = search || filterCompany !== "ALL" || dateFrom || dateTo;
+  const hasFilter = search || filterCompany !== "ALL" || filterBranch !== "ALL" || dateFrom || dateTo;
+  const companyName = companies.find(c => c.id === filterCompany)?.name;
+  const branchName = filterBranch === NO_BRANCH ? "ไม่ระบุสาขา" : branches.find(b => b.id === filterBranch)?.name;
+  const scopeLabel = filterCompany === "ALL" ? "ทุกบริษัท" : [companyName, filterBranch === "ALL" ? "ทุกสาขา" : branchName].filter(Boolean).join(" · ");
   const pct = progress && progress.total > 0 ? Math.round((progress.reviewed / progress.total) * 100) : 0;
 
   return (
@@ -160,7 +199,7 @@ export default function CallCountAdjust() {
             </p>
           </div>
           {progress && (
-            <div className="glass rounded-2xl px-4 py-3 w-[300px]">
+            <div className="glass rounded-2xl px-4 py-3 w-[320px]">
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-muted-foreground">ตรวจจำนวน Call แล้ว</span>
                 <span className="font-semibold tabular-nums">
@@ -168,6 +207,7 @@ export default function CallCountAdjust() {
                 </span>
               </div>
               <Progress value={pct} className="h-2" />
+              <p className="mt-1.5 text-[11px] text-muted-foreground truncate" title={scopeLabel}>ขอบเขต: {scopeLabel}</p>
             </div>
           )}
         </div>
@@ -187,20 +227,30 @@ export default function CallCountAdjust() {
                 <SelectItem value="ALL">ทั้งหมด</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterCompany} onValueChange={setFilterCompany}>
+            <Select value={filterCompany} onValueChange={changeCompany}>
               <SelectTrigger className="h-9 w-[160px] text-sm"><SelectValue placeholder="บริษัท" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">ทุกบริษัท</SelectItem>
                 {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {filterCompany !== "ALL" && (
+              <Select value={filterBranch} onValueChange={setFilterBranch}>
+                <SelectTrigger className="h-9 w-[150px] text-sm"><SelectValue placeholder="สาขา" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">ทุกสาขา</SelectItem>
+                  {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  <SelectItem value={NO_BRANCH}>ไม่ระบุสาขา</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <span className="text-xs text-muted-foreground whitespace-nowrap">วันที่แจ้ง:</span>
             <DatePickerInput value={dateFrom} onChange={setDateFrom} placeholder="ตั้งแต่วันที่" />
             <span className="text-muted-foreground text-xs">–</span>
             <DatePickerInput value={dateTo} onChange={setDateTo} placeholder="ถึงวันที่" />
             {hasFilter && (
               <Button variant="ghost" size="sm" className="h-9 px-2 text-muted-foreground"
-                onClick={() => { setSearch(""); setFilterCompany("ALL"); setDateFrom(undefined); setDateTo(undefined); }}>
+                onClick={() => { setSearch(""); changeCompany("ALL"); setDateFrom(undefined); setDateTo(undefined); }}>
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -218,7 +268,7 @@ export default function CallCountAdjust() {
                 <TableRow>
                   <TableHead className="w-[160px]">เลขที่</TableHead>
                   <TableHead className="w-[110px]">วันที่แจ้ง</TableHead>
-                  <TableHead className="w-[150px]">บริษัท / กลุ่มสินค้า</TableHead>
+                  <TableHead className="w-[170px]">บริษัท · สาขา / กลุ่มสินค้า</TableHead>
                   <TableHead>รายละเอียด</TableHead>
                   <TableHead className="w-[110px] text-center">จำนวน Call</TableHead>
                   <TableHead className="w-[120px] text-center">สถานะตรวจ</TableHead>
@@ -254,7 +304,7 @@ export default function CallCountAdjust() {
                         {row.complaint_date ? format(new Date(row.complaint_date), "d MMM yyyy", { locale: th }) : "-"}
                       </TableCell>
                       <TableCell className="text-xs pt-4">
-                        <div className="font-medium">{row.companies?.name || "-"}</div>
+                        <div className="font-medium">{row.companies?.name || "-"}{row.branches?.name ? ` · ${row.branches.name}` : ""}</div>
                         <div className="text-muted-foreground">{row.product_groups?.name || ""}</div>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[420px]">
