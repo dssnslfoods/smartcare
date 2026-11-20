@@ -1,16 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, List, ClipboardPlus, Database, LogOut, Users, ShieldCheck, CalendarCheck } from "lucide-react";
+import { BarChart3, List, ClipboardPlus, Database, LogOut, Users, ShieldCheck, CalendarCheck, PhoneCall } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "@/assets/logo.png";
 import { useAuth, Resource, AppRole } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import NewBadge from "@/components/NewBadge";
 
-const NAV_ITEMS: { path: string; label: string; icon: any; resource?: Resource; roles?: AppRole[] }[] = [
+const NAV_ITEMS: { path: string; label: string; icon: any; resource?: Resource; roles?: AppRole[]; isNew?: boolean }[] = [
   { path: "/", label: "Dashboard", icon: BarChart3, resource: "dashboard" },
   { path: "/complaints", label: "รายการ Complaint", icon: List, resource: "complaint_list" },
   { path: "/complaints/new", label: "บันทึกใหม่", icon: ClipboardPlus, resource: "complaint_form" },
   { path: "/close-case-adjust", label: "ปรับปรุงปิดเคส", icon: CalendarCheck, resource: "close_case_adjust" },
+  { path: "/call-count-adjust", label: "จำนวน Call", icon: PhoneCall, resource: "call_count_adjust", isNew: true },
   { path: "/master-data", label: "Master Data", icon: Database, resource: "master_data" },
   { path: "/users", label: "จัดการผู้ใช้", icon: Users, resource: "user_management" },
   { path: "/permissions", label: "กำหนดสิทธิ์", icon: ShieldCheck, resource: "role_permissions" },
@@ -61,6 +63,7 @@ export default function TopNavBar() {
               >
                 <item.icon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{item.label}</span>
+                {item.isNew && <NewBadge />}
               </Link>
             );
           })}

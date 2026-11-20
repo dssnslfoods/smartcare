@@ -53,6 +53,7 @@ export interface Database {
           caller_id: string | null; description: string | null; status: string | null;
           priority: string | null; resolution: string | null; resolved_at: string | null;
           created_at: string | null; updated_at: string | null; created_by: string | null;
+          call_count: number; call_count_reviewed_at: string | null; call_count_reviewed_by: string | null;
         };
         Insert: {
           id?: string; complaint_number?: string | null; complaint_date?: string | null;
@@ -61,6 +62,7 @@ export interface Database {
           caller_id?: string | null; description?: string | null; status?: string | null;
           priority?: string | null; resolution?: string | null; resolved_at?: string | null;
           created_at?: string | null; updated_at?: string | null; created_by?: string | null;
+          call_count?: number; call_count_reviewed_at?: string | null; call_count_reviewed_by?: string | null;
         };
         Update: {
           id?: string; complaint_number?: string | null; complaint_date?: string | null;
@@ -69,6 +71,7 @@ export interface Database {
           caller_id?: string | null; description?: string | null; status?: string | null;
           priority?: string | null; resolution?: string | null; resolved_at?: string | null;
           created_at?: string | null; updated_at?: string | null; created_by?: string | null;
+          call_count?: number; call_count_reviewed_at?: string | null; call_count_reviewed_by?: string | null;
         };
       };
       statuses: {

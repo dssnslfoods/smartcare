@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
+import NewBadge from "@/components/NewBadge";
 
 function DatePickerInput({ value, onChange, placeholder }: { value: Date | undefined; onChange: (d: Date | undefined) => void; placeholder: string }) {
   const [open, setOpen] = useState(false);
@@ -51,6 +52,7 @@ interface ComplaintRow {
   complaint_date: string | null;
   status: string | null;
   priority: string | null;
+  call_count: number | null;
   resolution: string | null;
   resolved_at: string | null;
   description: string | null;
@@ -169,7 +171,7 @@ export default function ComplaintList() {
 
       let countQuery = supabase.from("complaints").select("*", { count: "exact", head: true });
       let dataQuery = supabase.from("complaints").select(`
-        id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority, resolution, resolved_at,
+        id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority, call_count, resolution, resolved_at,
         description, action_items, cost_items,
         companies:company_id(name),
         branches:branch_id(name),
@@ -243,7 +245,7 @@ export default function ComplaintList() {
     try {
       // Fetch ALL matching records using pagination to bypass Supabase 1000-row default limit
       const EXPORT_SELECT = `
-        id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority,
+        id, closed_case_month, closed_case_year, complaint_number, complaint_date, status, priority, call_count,
         description, resolution, resolved_at, action_items, cost_items,
         companies:company_id(name),
         branches:branch_id(name),
@@ -314,6 +316,7 @@ export default function ComplaintList() {
         { header: "ช่องทางแจ้ง",       key: "caller",      width: 16 },
         { header: "ความสำคัญ",        key: "priority",    width: 12 },
         { header: "สถานะ",            key: "status",      width: 18 },
+        { header: "จำนวน Call (ครั้ง)", key: "callcount", width: 12 },
         { header: "Root Cause",       key: "rootcause",   width: 20 },
         { header: "รายละเอียด",        key: "desc",        width: 35 },
         { header: "มาตรการ",          key: "measure",     width: 30 },
@@ -323,6 +326,8 @@ export default function ComplaintList() {
         { header: "รวมค่าใช้จ่าย (บาท)", key: "totalcost", width: 16 },
       ];
       ws.columns = cols;
+      const callCountCol = cols.findIndex(c => c.key === "callcount") + 1;
+      const totalCostCol = cols.findIndex(c => c.key === "totalcost") + 1;
 
       const lastCol = String.fromCharCode(64 + cols.length); // e.g. "S"
 
@@ -406,6 +411,7 @@ export default function ComplaintList() {
             caller:      ai === 0 ? (c.callers?.name || "-") : "",
             priority:    ai === 0 ? (PRIORITY_TH[(c.priority || "").toLowerCase()] || c.priority || "-") : "",
             status:      ai === 0 ? (c.status || "-") : "",
+            callcount:   ai === 0 ? (c.call_count ?? 1) : "",
             rootcause:   ai === 0 ? (c.root_causes?.name || "-") : "",
             desc:        ai === 0 ? (c.description || "-") : "",
             measure:     action?.measure || "-",
@@ -421,14 +427,14 @@ export default function ComplaintList() {
           exRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
             cell.font = { name: "TH Sarabun New", size: 12 };
             cell.alignment = { vertical: "middle", wrapText: true,
-              horizontal: colNum === 1 ? "center" : colNum === 21 ? "right" : "left" };
+              horizontal: colNum === 1 || colNum === callCountCol ? "center" : colNum === totalCostCol ? "right" : "left" };
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowBg } };
             cell.border = borders;
           });
 
           // Highlight total cost cell
           if (ai === 0 && totalCost > 0) {
-            const costCell = exRow.getCell(21);
+            const costCell = exRow.getCell(totalCostCol);
             costCell.numFmt = '#,##0.00';
             costCell.font = { name: "TH Sarabun New", size: 12, bold: true, color: { argb: "065F46" } };
             costCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D1FAE5" } };
@@ -655,6 +661,11 @@ export default function ComplaintList() {
                         สถานะ {sortBy === "status" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
                       </button>
                     </TableHead>
+                    <TableHead className="w-[78px] text-center">
+                      <button className="mx-auto flex items-center gap-1 hover:text-primary transition-colors" onClick={() => { setSortBy("call_count"); setSortOrder(o => o === "desc" ? "asc" : "desc"); }}>
+                        Call <NewBadge /> {sortBy === "call_count" && (sortOrder === "desc" ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />)}
+                      </button>
+                    </TableHead>
                     <TableHead className="w-[70px] text-center">SLA</TableHead>
                     <TableHead className="w-[56px] text-center">แก้ไข</TableHead>
                   </TableRow>
@@ -662,7 +673,7 @@ export default function ComplaintList() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={13} className="text-center py-16 text-muted-foreground">
+                      <TableCell colSpan={14} className="text-center py-16 text-muted-foreground">
                         <div className="flex items-center justify-center gap-2">
                           <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                           กำลังโหลด...
@@ -671,7 +682,7 @@ export default function ComplaintList() {
                     </TableRow>
                   ) : complaints.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={13} className="text-center py-16 text-muted-foreground">
+                      <TableCell colSpan={14} className="text-center py-16 text-muted-foreground">
                         ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
                       </TableCell>
                     </TableRow>
@@ -707,6 +718,7 @@ export default function ComplaintList() {
                               {c.status || "-"}
                             </Badge>
                           </TableCell>
+                          <TableCell className="text-center text-sm font-semibold tabular-nums">{c.call_count ?? 1}</TableCell>
                           <TableCell className="text-center">
                             {daysOpen !== null ? (
                               <SlaChip days={daysOpen} />

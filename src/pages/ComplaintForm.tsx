@@ -23,6 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { guessExpenseType } from "@/lib/expenseTypeGuess";
 import ExpenseTypePicker from "@/components/ExpenseTypePicker";
+import NewBadge from "@/components/NewBadge";
+import { parseCallCount, MAX_CALL_COUNT } from "@/lib/callCount";
 
 interface LookupItem { id: string; name: string; }
 interface LookupData {
@@ -58,6 +60,7 @@ const INITIAL_FORM = {
   product_group_id: "", category_id: "", problem_type_id: "", problem_sub_type_id: "",
   caller_id: "", description: "", status: "", priority: "", root_cause_id: "",
   root_cause_ids: [] as string[],
+  call_count: "1",
 };
 
 // Hardcoded defaults in case database fetch fails
@@ -77,7 +80,8 @@ const DEFAULT_PRIORITIES = [
 ];
 
 export default function ComplaintForm() {
-  const { role, userProfile, user } = useAuth();
+  const { role, userProfile, user, hasPermission } = useAuth();
+  const canAdjustCallCount = hasPermission("call_count_adjust");
   const isStaff = role === "staff";
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(INITIAL_FORM);
@@ -326,6 +330,7 @@ export default function ComplaintForm() {
       priority: data.priority ?? "",
       root_cause_id: data.root_cause_id ?? "",
       root_cause_ids: Array.isArray((data as any).root_cause_ids) ? (data as any).root_cause_ids : (data.root_cause_id ? [data.root_cause_id] : []),
+      call_count: String((data as any).call_count ?? 1),
     });
     // Load action items — fall back to old resolution field for legacy records
     if (data.action_items && Array.isArray(data.action_items) && data.action_items.length > 0) {
@@ -386,6 +391,8 @@ export default function ComplaintForm() {
       [form.description, "รายละเอียด"],
     ];
     const missing = required.filter(([v]) => !v).map(([, label]) => label);
+    const callCount = parseCallCount(form.call_count);
+    if (callCount === null) missing.push(`จำนวน Call (จำนวนเต็ม 1–${MAX_CALL_COUNT})`);
 
     // Validate at least one action item with มาตรการ
     const hasAction = actionItems.some(a => a.measure.trim());
@@ -430,6 +437,8 @@ export default function ComplaintForm() {
       if (form.problem_type_id) payload.problem_type_id = form.problem_type_id;
       if (form.problem_sub_type_id) payload.problem_sub_type_id = form.problem_sub_type_id;
       if (form.caller_id) payload.caller_id = form.caller_id;
+      // After a complaint is saved, only users with call_count_adjust may change its call count
+      if (!editingId || canAdjustCallCount) payload.call_count = callCount;
 
       let error;
       if (editingId) {
@@ -630,6 +639,32 @@ export default function ComplaintForm() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* ─── จำนวน Call (Phase 1) ─── */}
+                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 bg-orange-500/10 px-4 py-3">
+                    <Label htmlFor="call_count" className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-foreground">
+                      จำนวน Call (ครั้ง) <span className="text-destructive">*</span>
+                      <NewBadge className="ml-1" />
+                    </Label>
+                    <Input
+                      id="call_count"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={MAX_CALL_COUNT}
+                      step={1}
+                      value={form.call_count}
+                      onChange={e => setField("call_count", e.target.value.replace(/[^\d]/g, ""))}
+                      onKeyDown={e => { if ([".", ",", "-", "+", "e", "E"].includes(e.key)) e.preventDefault(); }}
+                      disabled={!!editingId && !canAdjustCallCount}
+                      className="w-28 h-9 text-center font-semibold"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      {editingId && !canAdjustCallCount
+                        ? "แก้ไขจำนวน Call ภายหลังได้เฉพาะหัวหน้างาน/ผู้ดูแลระบบ"
+                        : "จำนวนครั้งที่แจ้งปัญหาภายใต้เลขที่เอกสารนี้ (ค่าเริ่มต้น 1)"}
+                    </p>
                   </div>
                 </div>
 

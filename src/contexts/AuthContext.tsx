@@ -10,6 +10,7 @@ export type Resource =
   | "complaint_list"
   | "complaint_form"
   | "close_case_adjust"
+  | "call_count_adjust"
   | "master_data"
   | "user_management"
   | "role_permissions";

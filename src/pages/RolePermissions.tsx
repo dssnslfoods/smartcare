@@ -22,6 +22,7 @@ const RESOURCES: { value: Resource; label: string }[] = [
   { value: "complaint_list", label: "รายการข้อร้องเรียน" },
   { value: "complaint_form", label: "บันทึกข้อร้องเรียน" },
   { value: "close_case_adjust", label: "ปรับปรุงปิดเคส" },
+  { value: "call_count_adjust", label: "จำนวน Call (กรอกย้อนหลัง/แก้ไข)" },
   { value: "master_data", label: "Master Data" },
   { value: "user_management", label: "จัดการผู้ใช้" },
   { value: "role_permissions", label: "กำหนดสิทธิ์" },
